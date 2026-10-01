@@ -1,117 +1,512 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast Food Menu</title>
-    <!-- Telegram Web App JS SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color, #f4f4f9);
-            color: var(--tg-theme-text-color, #333);
-            margin: 0;
-            padding: 15px;
-        }
-        h2 { text-align: center; margin-bottom: 20px; }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        .card {
-            background: var(--tg-theme-secondary-bg-color, #ffffff);
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .card img {
-            width: 100%;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-        .card h4 { margin: 8px 0 4px; font-size: 16px; }
-        .price { font-weight: bold; color: #e67e22; margin-bottom: 8px; }
-        .btn {
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
-        }
-        .btn:active { opacity: 0.8; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>STREET DOG URGANCH</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background: linear-gradient(180deg, rgba(10, 10, 12, 0.35), rgba(10, 10, 12, 0.55)),
+                  url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80') center/cover no-repeat fixed;
+      color: #ffffff;
+      padding: 16px;
+      padding-bottom: 90px;
+      overflow-x: hidden;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    /* Header & Greeting */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .greeting p {
+      font-size: 13px;
+      color: #d0d0d0;
+    }
+
+    .greeting h1 {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+    }
+
+    .greeting h1 span {
+      color: #ff7a00;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #ff7a00;
+    }
+
+    /* Search Bar */
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .search-box i {
+      color: #ddd;
+      margin-right: 10px;
+      font-size: 16px;
+    }
+
+    .search-box input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    /* Categories */
+    .categories {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      margin-bottom: 24px;
+      padding-bottom: 4px;
+    }
+
+    .categories::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cat-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 70px;
+      height: 75px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      color: #eee;
+      font-size: 11px;
+      font-weight: 600;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .cat-btn i {
+      font-size: 20px;
+    }
+
+    .cat-btn.active {
+      background: linear-gradient(135deg, #ff7a00, #ff4500);
+      color: #fff;
+      border: none;
+      box-shadow: 0 8px 20px rgba(255, 122, 0, 0.4);
+    }
+
+    /* Banner / Limited Offer */
+    .promo-banner {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .promo-text {
+      max-width: 60%;
+    }
+
+    .promo-badge {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #ff7a00;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .promo-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .promo-btn {
+      background: #ff7a00;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(255, 122, 0, 0.3);
+    }
+
+    .promo-img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+    }
+
+    /* Section Title */
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .section-title h2 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .section-title a {
+      color: #ff7a00;
+      font-size: 12px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    /* Product Grid */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .product-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 12px;
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .product-img-box {
+      width: 100%;
+      height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .product-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,0.5));
+    }
+
+    .product-name {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .product-desc {
+      font-size: 11px;
+      color: #ccc;
+      margin-bottom: 10px;
+      height: 28px;
+      overflow: hidden;
+    }
+
+    .product-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .product-price {
+      font-size: 14px;
+      font-weight: 800;
+      color: #ff7a00;
+    }
+
+    .add-btn {
+      width: 32px;
+      height: 32px;
+      background: #ff7a00;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(255, 122, 0, 0.3);
+    }
+
+    /* Fixed Bottom Cart Bar */
+    .cart-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      background: rgba(18, 18, 22, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-radius: 20px;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      z-index: 99;
+      transform: translateY(120%);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .cart-bar.active {
+      transform: translateY(0);
+    }
+
+    .cart-info p {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .cart-info h3 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .order-btn {
+      background: linear-gradient(135deg, #ff7a00, #ff4500);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 122, 0, 0.4);
+    }
+  </style>
 </head>
 <body>
 
-    <h2>🍔 Fast Food Menyu</h2>
+  <!-- Header -->
+  <div class="header">
+    <div class="greeting">
+      <p id="user-name">Xush kelibsiz! 👋</p>
+      <h1>Ajoyib Taom, <br><span>Zo'r Kayfiyat!</span></h1>
+    </div>
+    <div class="avatar">
+      <i class="fa-solid fa-user"></i>
+    </div>
+  </div>
 
-    <div class="grid">
-        <!-- Taom 1 -->
-        <div class="card">
-            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300" alt="Burger">
-            <h4>Cheeseburger</h4>
-            <div class="price">35 000 so'm</div>
-            <button class="btn" onclick="addToCart('Cheeseburger', 35000)">Qo'shish</button>
-        </div>
-        <!-- Taom 2 -->
-        <div class="card">
-            <img src="https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=300" alt="Lavash">
-            <h4>M go'shtli Lavash</h4>
-            <div class="price">32 000 so'm</div>
-            <button class="btn" onclick="addToCart('M go\'shtli Lavash', 32000)">Qo'shish</button>
-        </div>
-        <!-- Taom 3 -->
-        <div class="card">
-            <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=300" alt="Fri">
-            <h4>Kartoshka Fri</h4>
-            <div class="price">18 000 so'm</div>
-            <button class="btn" onclick="addToCart('Kartoshka Fri', 18000)">Qo'shish</button>
-        </div>
-        <!-- Taom 4 -->
-        <div class="card">
-            <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300" alt="Cola">
-            <h4>Coca-Cola 0.5L</h4>
-            <div class="price">10 000 so'm</div>
-            <button class="btn" onclick="addToCart('Coca-Cola 0.5L', 10000)">Qo'shish</button>
-        </div>
+  <!-- Search -->
+  <div class="search-box">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" placeholder="Sevimli taomingizni qidiring...">
+  </div>
+
+  <!-- Categories -->
+  <div class="categories">
+    <div class="cat-btn active">
+      <i class="fa-solid fa-hotdog"></i>
+      <span>Hot-Dog</span>
+    </div>
+    <div class="cat-btn">
+      <i class="fa-solid fa-burger"></i>
+      <span>Burger</span>
+    </div>
+    <div class="cat-btn">
+      <i class="fa-solid fa-pizza-slice"></i>
+      <span>Pitsa</span>
+    </div>
+    <div class="cat-btn">
+      <i class="fa-solid fa-wine-glass"></i>
+      <span>Ichimlik</span>
+    </div>
+  </div>
+
+  <!-- Promo Banner -->
+  <div class="promo-banner">
+    <div class="promo-text">
+      <div class="promo-badge">Cheklangan Taklif</div>
+      <div class="promo-title">Spicy Hot-Dog Combo Set</div>
+      <button class="promo-btn">Buyurtma Qilish</button>
+    </div>
+    <img class="promo-img" src="hotdog.jpg" alt="Combo">
+  </div>
+
+  <!-- Section Title -->
+  <div class="section-title">
+    <h2>Ommabop Taomlar</h2>
+    <a href="#">Barchasi</a>
+  </div>
+
+  <!-- Product Grid -->
+  <div class="product-grid">
+    
+    <!-- Card 1 -->
+    <div class="product-card">
+      <div class="product-img-box">
+        <img class="product-img" src="hotdog.jpg" alt="Hot Dog">
+      </div>
+      <div class="product-name">Classic Hot-Dog</div>
+      <div class="product-desc">Sosiska, pishloq va maxsus sous</div>
+      <div class="product-bottom">
+        <div class="product-price">22,000 so'm</div>
+        <button class="add-btn" onclick="addToCart('Classic Hot-Dog', 22000)"><i class="fa-solid fa-plus"></i></button>
+      </div>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Oynani to'liq ekranga yoyish
+    <!-- Card 2 -->
+    <div class="product-card">
+      <div class="product-img-box">
+        <img class="product-img" src="oddiyhoddok.jpg" alt="BURGER">
+      </div>
+      <div class="product-name">Double Cheese Burger</div>
+      <div class="product-desc">Ikkitalik go'sht, cheddar pishloq</div>
+      <div class="product-bottom">
+        <div class="product-price">35,000 so'm</div>
+        <button class="add-btn" onclick="addToCart('Double Cheese Burger', 35000)"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>
 
-        let cart = [];
+    <!-- Card 3 -->
+    <div class="product-card">
+      <div class="product-img-box">
+        <img class="product-img" src="royalhotdog.jpg" alt="Hot Dog">
+      </div>
+      <div class="product-name">Royal Hot-Dog</div>
+      <div class="product-desc">Katta sosiska, jalapeno va fri</div>
+      <div class="product-bottom">
+        <div class="product-price">28,000 so'm</div>
+        <button class="add-btn" onclick="addToCart('Royal Hot-Dog', 28000)"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>
 
-        function addToCart(title, price) {
-            cart.push({ title, price });
-            updateMainButton();
-        }
+    <!-- Card 4 -->
+    <div class="product-card">
+      <div class="product-img-box">
+        <img class="product-img" src="cola.jpg" alt="Cola">
+      </div>
+      <div class="product-name">Coca-Cola 0.5L</div>
+      <div class="product-desc">Muzdek salqin ichimlik</div>
+      <div class="product-bottom">
+        <div class="product-price">8,000 so'm</div>
+        <button class="add-btn" onclick="addToCart('Coca-Cola 0.5L', 8000)"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>
 
-        function updateMainButton() {
-            if (cart.length > 0) {
-                const total = cart.reduce((sum, item) => sum + item.price, 0);
-                tg.MainButton.setText(`Buyurtma berish (${total.toLocaleString()} so'm)`);
-                tg.MainButton.show();
-            } else {
-                tg.MainButton.hide();
-            }
-        }
+  </div>
 
-        // Telegram pastki asosiy tugmasi bosilganda ma'lumotni Botga yuborish
-        tg.MainButton.onClick(() => {
-            const orderData = {
-                items: cart,
-                total: cart.reduce((sum, item) => sum + item.price, 0)
-            };
-            tg.sendData(JSON.stringify(orderData));
-        });
-    </script>
+  <!-- Cart Bar -->
+  <div class="cart-bar" id="cartBar">
+    <div class="cart-info">
+      <p id="cartCount">0 ta mahsulot</p>
+      <h3 id="cartTotal">0 so'm</h3>
+    </div>
+    <button class="order-btn" onclick="sendOrder()">Buyurtma berish <i class="fa-solid fa-arrow-right"></i></button>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // Telegram foydalanuvchi ismini chiqarish
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      document.getElementById('user-name').innerText = `Salom, ${tg.initDataUnsafe.user.first_name}! 👋`;
+    }
+
+    let cart = [];
+
+    function addToCart(name, price) {
+      cart.push({ name, price });
+      updateCartBar();
+    }
+
+    function updateCartBar() {
+      const cartBar = document.getElementById('cartBar');
+      const cartCount = document.getElementById('cartCount');
+      const cartTotal = document.getElementById('cartTotal');
+
+      if (cart.length > 0) {
+        cartBar.classList.add('active');
+        const total = cart.reduce((sum, item) => sum + item.price, 0);
+        cartCount.innerText = `${cart.length} ta mahsulot`;
+        cartTotal.innerText = `${total.toLocaleString()} so'm`;
+      } else {
+        cartBar.classList.remove('active');
+      }
+    }
+
+    function sendOrder() {
+      if (cart.length === 0) return;
+      
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const data = {
+        items: cart,
+        totalPrice: total
+      };
+
+      tg.sendData(JSON.stringify(data));
+      tg.close();
+    }
+  </script>
 </body>
 </html>
