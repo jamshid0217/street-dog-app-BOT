@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Food Menu</title>
+    <!-- Telegram Web App JS SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #f4f4f9);
+            color: var(--tg-theme-text-color, #333);
+            margin: 0;
+            padding: 15px;
+        }
+        h2 { text-align: center; margin-bottom: 20px; }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .card img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .card h4 { margin: 8px 0 4px; font-size: 16px; }
+        .price { font-weight: bold; color: #e67e22; margin-bottom: 8px; }
+        .btn {
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+        .btn:active { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+    <h2>🍔 Fast Food Menyu</h2>
+
+    <div class="grid">
+        <!-- Taom 1 -->
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300" alt="Burger">
+            <h4>Cheeseburger</h4>
+            <div class="price">35 000 so'm</div>
+            <button class="btn" onclick="addToCart('Cheeseburger', 35000)">Qo'shish</button>
+        </div>
+        <!-- Taom 2 -->
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=300" alt="Lavash">
+            <h4>M go'shtli Lavash</h4>
+            <div class="price">32 000 so'm</div>
+            <button class="btn" onclick="addToCart('M go\'shtli Lavash', 32000)">Qo'shish</button>
+        </div>
+        <!-- Taom 3 -->
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=300" alt="Fri">
+            <h4>Kartoshka Fri</h4>
+            <div class="price">18 000 so'm</div>
+            <button class="btn" onclick="addToCart('Kartoshka Fri', 18000)">Qo'shish</button>
+        </div>
+        <!-- Taom 4 -->
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300" alt="Cola">
+            <h4>Coca-Cola 0.5L</h4>
+            <div class="price">10 000 so'm</div>
+            <button class="btn" onclick="addToCart('Coca-Cola 0.5L', 10000)">Qo'shish</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Oynani to'liq ekranga yoyish
+
+        let cart = [];
+
+        function addToCart(title, price) {
+            cart.push({ title, price });
+            updateMainButton();
+        }
+
+        function updateMainButton() {
+            if (cart.length > 0) {
+                const total = cart.reduce((sum, item) => sum + item.price, 0);
+                tg.MainButton.setText(`Buyurtma berish (${total.toLocaleString()} so'm)`);
+                tg.MainButton.show();
+            } else {
+                tg.MainButton.hide();
+            }
+        }
+
+        // Telegram pastki asosiy tugmasi bosilganda ma'lumotni Botga yuborish
+        tg.MainButton.onClick(() => {
+            const orderData = {
+                items: cart,
+                total: cart.reduce((sum, item) => sum + item.price, 0)
+            };
+            tg.sendData(JSON.stringify(orderData));
+        });
+    </script>
+</body>
+</html>
