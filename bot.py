@@ -15,7 +15,7 @@ BOT_TOKEN = "8983485871:AAGjZ4uZteoh-VSfZZU4kgd79wdelfAQniw"
 WEB_APP_URL = "https://jamshid0217.github.io/street-dog-app/"
 
 # Telegram ID'ingizni shu yerga yozing
-ADMIN_ID = 123456789
+ADMIN_ID = 6069854654
 
 # Kunlik buyurtmalarni xotirada saqlash
 daily_orders = []
