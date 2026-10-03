@@ -20,10 +20,18 @@
                   url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80') center/cover no-repeat fixed;
       color: #ffffff;
       padding: 16px;
-      padding-bottom: 100px;
+      padding-bottom: 90px;
       overflow-x: hidden;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
+    }
+
+    /* Tab Sections */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
     }
 
     /* Header & Greeting */
@@ -270,10 +278,10 @@
     /* Fixed Bottom Cart Bar */
     .cart-bar {
       position: fixed;
-      bottom: 16px;
+      bottom: 75px;
       left: 16px;
       right: 16px;
-      background: rgba(18, 18, 22, 0.9);
+      background: rgba(18, 18, 22, 0.95);
       border: 1px solid rgba(255, 255, 255, 0.25);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -283,8 +291,8 @@
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-      z-index: 99;
-      transform: translateY(120%);
+      z-index: 98;
+      transform: translateY(150%);
       transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
@@ -313,6 +321,277 @@
       font-size: 13px;
       cursor: pointer;
       box-shadow: 0 4px 15px rgba(255, 122, 0, 0.4);
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 65px;
+      background: rgba(15, 15, 18, 0.92);
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 99;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #8e8e93;
+      font-size: 11px;
+      font-weight: 600;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 33%;
+    }
+
+    .nav-item i {
+      font-size: 18px;
+    }
+
+    .nav-item.active {
+      color: #ff7a00;
+    }
+
+    /* Orders Page Styles */
+    .orders-container, .profile-container {
+      padding: 10px 0;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .order-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .order-status {
+      color: #ff7a00;
+      font-weight: 700;
+    }
+
+    .profile-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .profile-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff7a00, #ff4500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px auto;
+      font-size: 28px;
+      color: #fff;
+    }
+
+    .profile-name {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .profile-info {
+      font-size: 13px;
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+
+    .profile-menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    /* Modal Checkout Screen */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 1100;
+      display: flex;
+      align-items: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      width: 100%;
+      background: #1a1a20;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      padding: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .close-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .option-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .option-card i {
+      font-size: 20px;
+      margin-bottom: 6px;
+      color: #ff7a00;
+      display: block;
+    }
+
+    .option-card span {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .option-card.active {
+      border-color: #ff7a00;
+      background: rgba(255, 122, 0, 0.15);
+      box-shadow: 0 0 12px rgba(255, 122, 0, 0.3);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      color: #aaa;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .form-input-box {
+      display: flex;
+      gap: 8px;
+    }
+
+    .location-btn {
+      background: rgba(255, 122, 0, 0.2);
+      border: 1px solid #ff7a00;
+      color: #ff7a00;
+      padding: 0 12px;
+      border-radius: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .form-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .submit-order-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #ff7a00, #ff4500);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 6px 20px rgba(255, 122, 0, 0.4);
     }
 
     /* Detail Modal */
@@ -440,145 +719,7 @@
       cursor: pointer; text-align: center; box-shadow: 0 4px 15px rgba(255, 122, 0, 0.4);
     }
 
-    /* Modal Checkout Screen */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      z-index: 1100;
-      display: flex;
-      align-items: flex-end;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-
-    .modal-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .modal-content {
-      width: 100%;
-      background: #1a1a20;
-      border-top-left-radius: 24px;
-      border-top-right-radius: 24px;
-      padding: 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
-      transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .modal-overlay.active .modal-content {
-      transform: translateY(0);
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .modal-header h3 {
-      font-size: 18px;
-      font-weight: 800;
-      color: #fff;
-    }
-
-    .close-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      color: #fff;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-
-    .option-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .option-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 14px;
-      padding: 12px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .option-card i {
-      font-size: 20px;
-      margin-bottom: 6px;
-      color: #ff7a00;
-      display: block;
-    }
-
-    .option-card span {
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .option-card.active {
-      border-color: #ff7a00;
-      background: rgba(255, 122, 0, 0.15);
-      box-shadow: 0 0 12px rgba(255, 122, 0, 0.3);
-    }
-
-    .form-group {
-      margin-bottom: 14px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 11px;
-      color: #aaa;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 600;
-    }
-
-    .form-input {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 12px;
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .form-input:focus {
-      border-color: #ff7a00;
-    }
-
-    .submit-order-btn {
-      width: 100%;
-      background: linear-gradient(135deg, #ff7a00, #ff4500);
-      color: #fff;
-      border: none;
-      padding: 14px;
-      border-radius: 16px;
-      font-size: 15px;
-      font-weight: 800;
-      cursor: pointer;
-      margin-top: 10px;
-      box-shadow: 0 6px 20px rgba(255, 122, 0, 0.4);
-    }
-
-    /* Countdown Modal (Timer) */
+    /* Countdown Modal */
     .timer-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -649,153 +790,214 @@
 </head>
 <body>
 
-  <!-- Header -->
-  <div class="header">
-    <div class="greeting">
-      <p id="user-name">Xush kelibsiz! 👋</p>
-      <h1>STREET DOGGA 🌭<br><span>YOQIMLI ISHTAHA TILAYMIZ</span></h1>
-    </div>
-    <div class="avatar">
-      <i class="fa-solid fa-user"></i>
-    </div>
-  </div>
-
-  <!-- Search -->
-  <div class="search-box">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <input type="text" id="searchInput" placeholder="Sevimli taomingizni qidiring...">
-  </div>
-
-  <!-- Categories -->
-  <div class="categories">
-    <div class="cat-btn active" onclick="filterCategory('all', this)">
-      <i class="fa-solid fa-border-all"></i>
-      <span>Barchasi</span>
-    </div>
-    <div class="cat-btn" onclick="filterCategory('hotdog', this)">
-      <i class="fa-solid fa-hotdog"></i>
-      <span>Hot-Dog</span>
-    </div>
-    <div class="cat-btn" onclick="filterCategory('burger', this)">
-      <i class="fa-solid fa-burger"></i>
-      <span>Burger</span>
-    </div>
-    <div class="cat-btn" onclick="filterCategory('drink', this)">
-      <i class="fa-solid fa-wine-glass"></i>
-      <span>Ichimlik</span>
-    </div>
-  </div>
-
-  <!-- Section Title -->
-  <div class="section-title">
-    <h2>Ommabop Taomlar</h2>
-  </div>
-
-  <!-- Product Grid -->
-  <div class="product-grid">
-    <div class="product-card" data-category="hotdog" id="card-p1" onclick="openDetail('p1')">
-      <div class="product-img-box">
-        <img class="product-img" src="hotdog.jpg" onerror="this.src='https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80'" alt="Classic Hot-Dog">
+  <!-- TAB 1: BOSH SAHIFA -->
+  <div id="tab-home" class="tab-content active">
+    <!-- Header -->
+    <div class="header">
+      <div class="greeting">
+        <p id="user-name">Xush kelibsiz! 👋</p>
+        <h1>STREET DOGGA 🌭<br><span>YOQIMLI ISHTAHA TILAYMIZ</span></h1>
       </div>
-      <div class="product-name">Classic Hot-Dog</div>
-      <div class="product-desc">Sosiska, pishloq va maxsus sous</div>
-      <div class="product-bottom">
-        <div class="product-price">22,000 so'm</div>
-        <button class="add-btn" id="btn-p1" onclick="event.stopPropagation(); changeQuantity('p1', 'Classic Hot-Dog', 22000, 1)">
-          <i class="fa-solid fa-plus"></i>
-        </button>
-        <div class="quantity-control" id="ctrl-p1" onclick="event.stopPropagation();">
-          <button class="qty-btn" onclick="changeQuantity('p1', 'Classic Hot-Dog', 22000, -1)"><i class="fa-solid fa-minus"></i></button>
-          <span class="qty-count" id="count-p1">0</span>
-          <button class="qty-btn" onclick="changeQuantity('p1', 'Classic Hot-Dog', 22000, 1)"><i class="fa-solid fa-plus"></i></button>
+      <div class="avatar">
+        <i class="fa-solid fa-user"></i>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="searchInput" placeholder="Sevimli taomingizni qidiring...">
+    </div>
+
+    <!-- Categories -->
+    <div class="categories">
+      <div class="cat-btn active" onclick="filterCategory('all', this)">
+        <i class="fa-solid fa-border-all"></i>
+        <span>Barchasi</span>
+      </div>
+      <div class="cat-btn" onclick="filterCategory('hotdog', this)">
+        <i class="fa-solid fa-hotdog"></i>
+        <span>Hot-Dog</span>
+      </div>
+      <div class="cat-btn" onclick="filterCategory('burger', this)">
+        <i class="fa-solid fa-burger"></i>
+        <span>Burger</span>
+      </div>
+      <div class="cat-btn" onclick="filterCategory('drink', this)">
+        <i class="fa-solid fa-wine-glass"></i>
+        <span>Ichimlik</span>
+      </div>
+    </div>
+
+    <!-- Section Title -->
+    <div class="section-title">
+      <h2>Ommabop Taomlar</h2>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="product-grid">
+      <div class="product-card" data-category="hotdog" id="card-p1" onclick="openDetail('p1')">
+        <div class="product-img-box">
+          <img class="product-img" src="hotdog.jpg" onerror="this.src='https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80'" alt="Classic Hot-Dog">
+        </div>
+        <div class="product-name">Classic Hot-Dog</div>
+        <div class="product-desc">Sosiska, pishloq va maxsus sous</div>
+        <div class="product-bottom">
+          <div class="product-price">22,000 so'm</div>
+          <button class="add-btn" id="btn-p1" onclick="event.stopPropagation(); changeQuantity('p1', 'Classic Hot-Dog', 22000, 1)">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <div class="quantity-control" id="ctrl-p1" onclick="event.stopPropagation();">
+            <button class="qty-btn" onclick="changeQuantity('p1', 'Classic Hot-Dog', 22000, -1)"><i class="fa-solid fa-minus"></i></button>
+            <span class="qty-count" id="count-p1">0</span>
+            <button class="qty-btn" onclick="changeQuantity('p1', 'Classic Hot-Dog', 22000, 1)"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card" data-category="burger" id="card-p2" onclick="openDetail('p2')">
+        <div class="product-img-box">
+          <img class="product-img" src="oddiyhoddok.jpg" onerror="this.src='https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80'" alt="Double Cheese Burger">
+        </div>
+        <div class="product-name">Double Cheese Burger</div>
+        <div class="product-desc">Ikkitalik go'sht, cheddar pishloq</div>
+        <div class="product-bottom">
+          <div class="product-price">35,000 so'm</div>
+          <button class="add-btn" id="btn-p2" onclick="event.stopPropagation(); changeQuantity('p2', 'Double Cheese Burger', 35000, 1)">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <div class="quantity-control" id="ctrl-p2" onclick="event.stopPropagation();">
+            <button class="qty-btn" onclick="changeQuantity('p2', 'Double Cheese Burger', 35000, -1)"><i class="fa-solid fa-minus"></i></button>
+            <span class="qty-count" id="count-p2">0</span>
+            <button class="qty-btn" onclick="changeQuantity('p2', 'Double Cheese Burger', 35000, 1)"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card" data-category="drink" id="card-p3" onclick="openDetail('p3')">
+        <div class="product-img-box">
+          <img class="product-img" src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80" alt="Coca-Cola 0.5L">
+        </div>
+        <div class="product-name">Coca-Cola 0.5L</div>
+        <div class="product-desc">Salqinlashtiruvchi gazlangan ichimlik</div>
+        <div class="product-bottom">
+          <div class="product-price">8,000 so'm</div>
+          <button class="add-btn" id="btn-p3" onclick="event.stopPropagation(); changeQuantity('p3', 'Coca-Cola 0.5L', 8000, 1)">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <div class="quantity-control" id="ctrl-p3" onclick="event.stopPropagation();">
+            <button class="qty-btn" onclick="changeQuantity('p3', 'Coca-Cola 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
+            <span class="qty-count" id="count-p3">0</span>
+            <button class="qty-btn" onclick="changeQuantity('p3', 'Coca-Cola 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card" data-category="drink" id="card-p4" onclick="openDetail('p4')">
+        <div class="product-img-box">
+          <img class="product-img" src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80" alt="Fanta 0.5L">
+        </div>
+        <div class="product-name">Fanta 0.5L</div>
+        <div class="product-desc">Meva ta'mli salqinlashtiruvchi ichimlik</div>
+        <div class="product-bottom">
+          <div class="product-price">8,000 so'm</div>
+          <button class="add-btn" id="btn-p4" onclick="event.stopPropagation(); changeQuantity('p4', 'Fanta 0.5L', 8000, 1)">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <div class="quantity-control" id="ctrl-p4" onclick="event.stopPropagation();">
+            <button class="qty-btn" onclick="changeQuantity('p4', 'Fanta 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
+            <span class="qty-count" id="count-p4">0</span>
+            <button class="qty-btn" onclick="changeQuantity('p4', 'Fanta 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card" data-category="drink" id="card-p5" onclick="openDetail('p5')">
+        <div class="product-img-box">
+          <img class="product-img" src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80" alt="Sprite 0.5L">
+        </div>
+        <div class="product-name">Sprite 0.5L</div>
+        <div class="product-desc">Limon va laym ta'mli muzdek ichimlik</div>
+        <div class="product-bottom">
+          <div class="product-price">8,000 so'm</div>
+          <button class="add-btn" id="btn-p5" onclick="event.stopPropagation(); changeQuantity('p5', 'Sprite 0.5L', 8000, 1)">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <div class="quantity-control" id="ctrl-p5" onclick="event.stopPropagation();">
+            <button class="qty-btn" onclick="changeQuantity('p5', 'Sprite 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
+            <span class="qty-count" id="count-p5">0</span>
+            <button class="qty-btn" onclick="changeQuantity('p5', 'Sprite 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
+          </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="product-card" data-category="burger" id="card-p2" onclick="openDetail('p2')">
-      <div class="product-img-box">
-        <img class="product-img" src="oddiyhoddok.jpg" onerror="this.src='https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80'" alt="Double Cheese Burger">
-      </div>
-      <div class="product-name">Double Cheese Burger</div>
-      <div class="product-desc">Ikkitalik go'sht, cheddar pishloq</div>
-      <div class="product-bottom">
-        <div class="product-price">35,000 so'm</div>
-        <button class="add-btn" id="btn-p2" onclick="event.stopPropagation(); changeQuantity('p2', 'Double Cheese Burger', 35000, 1)">
-          <i class="fa-solid fa-plus"></i>
-        </button>
-        <div class="quantity-control" id="ctrl-p2" onclick="event.stopPropagation();">
-          <button class="qty-btn" onclick="changeQuantity('p2', 'Double Cheese Burger', 35000, -1)"><i class="fa-solid fa-minus"></i></button>
-          <span class="qty-count" id="count-p2">0</span>
-          <button class="qty-btn" onclick="changeQuantity('p2', 'Double Cheese Burger', 35000, 1)"><i class="fa-solid fa-plus"></i></button>
-        </div>
-      </div>
-    </div>
-
-    <div class="product-card" data-category="drink" id="card-p3" onclick="openDetail('p3')">
-      <div class="product-img-box">
-        <img class="product-img" src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80" alt="Coca-Cola 0.5L">
-      </div>
-      <div class="product-name">Coca-Cola 0.5L</div>
-      <div class="product-desc">Salqinlashtiruvchi gazlangan ichimlik</div>
-      <div class="product-bottom">
-        <div class="product-price">8,000 so'm</div>
-        <button class="add-btn" id="btn-p3" onclick="event.stopPropagation(); changeQuantity('p3', 'Coca-Cola 0.5L', 8000, 1)">
-          <i class="fa-solid fa-plus"></i>
-        </button>
-        <div class="quantity-control" id="ctrl-p3" onclick="event.stopPropagation();">
-          <button class="qty-btn" onclick="changeQuantity('p3', 'Coca-Cola 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
-          <span class="qty-count" id="count-p3">0</span>
-          <button class="qty-btn" onclick="changeQuantity('p3', 'Coca-Cola 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
-        </div>
-      </div>
-    </div>
-
-    <div class="product-card" data-category="drink" id="card-p4" onclick="openDetail('p4')">
-      <div class="product-img-box">
-        <img class="product-img" src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80" alt="Fanta 0.5L">
-      </div>
-      <div class="product-name">Fanta 0.5L</div>
-      <div class="product-desc">Meva ta'mli salqinlashtiruvchi ichimlik</div>
-      <div class="product-bottom">
-        <div class="product-price">8,000 so'm</div>
-        <button class="add-btn" id="btn-p4" onclick="event.stopPropagation(); changeQuantity('p4', 'Fanta 0.5L', 8000, 1)">
-          <i class="fa-solid fa-plus"></i>
-        </button>
-        <div class="quantity-control" id="ctrl-p4" onclick="event.stopPropagation();">
-          <button class="qty-btn" onclick="changeQuantity('p4', 'Fanta 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
-          <span class="qty-count" id="count-p4">0</span>
-          <button class="qty-btn" onclick="changeQuantity('p4', 'Fanta 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
-        </div>
-      </div>
-    </div>
-
-    <div class="product-card" data-category="drink" id="card-p5" onclick="openDetail('p5')">
-      <div class="product-img-box">
-        <img class="product-img" src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80" alt="Sprite 0.5L">
-      </div>
-      <div class="product-name">Sprite 0.5L</div>
-      <div class="product-desc">Limon va laym ta'mli muzdek ichimlik</div>
-      <div class="product-bottom">
-        <div class="product-price">8,000 so'm</div>
-        <button class="add-btn" id="btn-p5" onclick="event.stopPropagation(); changeQuantity('p5', 'Sprite 0.5L', 8000, 1)">
-          <i class="fa-solid fa-plus"></i>
-        </button>
-        <div class="quantity-control" id="ctrl-p5" onclick="event.stopPropagation();">
-          <button class="qty-btn" onclick="changeQuantity('p5', 'Sprite 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
-          <span class="qty-count" id="count-p5">0</span>
-          <button class="qty-btn" onclick="changeQuantity('p5', 'Sprite 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
+  <!-- TAB 2: BUYURTMALARIM -->
+  <div id="tab-orders" class="tab-content">
+    <div class="orders-container">
+      <div class="page-title">Mening buyurtmalarim 📦</div>
+      
+      <div id="orders-list">
+        <!-- Buyurtmalar bo'lsa JavaScript orqali shu yerga tushadi -->
+        <div class="order-card" style="text-align: center; color: #aaa; padding: 30px 10px;">
+          <i class="fa-solid fa-receipt" style="font-size: 32px; margin-bottom: 10px; color: #ff7a00;"></i>
+          <p>Hozircha buyurtmalaringiz yo'q</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Cart Bar -->
+  <!-- TAB 3: PROFIL -->
+  <div id="tab-profile" class="tab-content">
+    <div class="profile-container">
+      <div class="page-title">Mening profilim 👤</div>
+      <div class="profile-card">
+        <div class="profile-avatar">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div class="profile-name" id="profile-full-name">Mijoz</div>
+        <div class="profile-info" id="profile-username">@telegram</div>
+
+        <div class="profile-menu-item">
+          <span><i class="fa-solid fa-location-dot" style="color:#ff7a00; margin-right:8px;"></i> Shahar</span>
+          <span>Urganch</span>
+        </div>
+        <div class="profile-menu-item">
+          <span><i class="fa-solid fa-phone" style="color:#ff7a00; margin-right:8px;"></i> Aloqa</span>
+          <span>+998 90 123 45 67</span>
+        </div>
+        <div class="profile-menu-item">
+          <span><i class="fa-solid fa-shield-halved" style="color:#ff7a00; margin-right:8px;"></i> Ilova versiyasi</span>
+          <span>v2.1.0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart Bar (Menyu ustida turadi) -->
   <div class="cart-bar" id="cartBar">
     <div class="cart-info">
       <p id="cartCount">0 ta mahsulot</p>
       <h3 id="cartTotal">0 so'm</h3>
     </div>
     <button class="order-btn" onclick="openCheckoutModal()">Buyurtma berish <i class="fa-solid fa-arrow-right"></i></button>
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('home', this)">
+      <i class="fa-solid fa-utensils"></i>
+      <span>Menyu</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('orders', this)">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Buyurtmalarim</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('profile', this)">
+      <i class="fa-solid fa-user"></i>
+      <span>Profil</span>
+    </div>
   </div>
 
   <!-- Product Detail Modal -->
@@ -868,7 +1070,12 @@
 
       <div class="form-group" id="addressGroup">
         <label>Yetkazib berish manzili</label>
-        <input type="text" id="addressInput" class="form-input" placeholder="Urganch shahri, Al-Xorazmiy ko'chasi 12-uy">
+        <div class="form-input-box">
+          <input type="text" id="addressInput" class="form-input" placeholder="Urganch shahri, Al-Xorazmiy ko'chasi 12-uy">
+          <button type="button" class="location-btn" onclick="getCurrentLocation()" title="Joylashuvni aniqlash">
+            <i class="fa-solid fa-location-crosshairs"></i>
+          </button>
+        </div>
       </div>
 
       <div class="form-group">
@@ -894,7 +1101,7 @@
     </div>
   </div>
 
-  <!-- Countdown Overlay (Sekund Sanash Oynasi) -->
+  <!-- Countdown Overlay -->
   <div class="timer-overlay" id="timerOverlay">
     <i class="fa-solid fa-fire-burner timer-icon"></i>
     <div class="timer-title">Buyurtmangiz qabul qilindi! 🎉</div>
@@ -908,7 +1115,10 @@
     tg.expand();
 
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-      document.getElementById('user-name').innerText = `Salom, ${tg.initDataUnsafe.user.first_name}! 👋`;
+      const user = tg.initDataUnsafe.user;
+      document.getElementById('user-name').innerText = `Salom, ${user.first_name}! 👋`;
+      document.getElementById('profile-full-name').innerText = `${user.first_name} ${user.last_name || ''}`;
+      document.getElementById('profile-username').innerText = user.username ? `@${user.username}` : 'ID: ' + user.id;
     }
 
     const products = {
@@ -920,11 +1130,22 @@
     };
 
     let cart = {};
+    let myOrders = [];
     let selectedDelivery = 'delivery'; 
     let selectedPayment = 'Naqd / Karta';
     let selectedDetailId = null;
     let modalQty = 1;
     let countdownInterval = null;
+    let userLocation = null;
+
+    // Tab o'tkazish mantig'i
+    function switchTab(tabName, element) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      if (element) element.classList.add('active');
+    }
 
     function openDetail(id) {
       selectedDetailId = id;
@@ -1061,7 +1282,26 @@
       }
     }
 
-    // Buyurtmani tasdiqlash va adminga to'g'ridan-to'g'ri yuborish
+    function getCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            userLocation = { latitude, longitude };
+            
+            document.getElementById('addressInput').value = `Geolokatsiya aniqlandi (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+            alert("Joylashuvingiz muvaffaqiyatli aniqlandi!");
+          },
+          (error) => {
+            alert("Joylashuvni aniqlab bo'lmadi. Iltimos, manzilni qo'lda kiriting.");
+          }
+        );
+      } else {
+        alert("Brazeringiz geolokatsiyani qo'llab-quvvatlamaydi.");
+      }
+    }
+
     function confirmOrder() {
       const BOT_TOKEN = "8983485871:AAFzezqjvtLgNDQ-LfIxSsMMttbdZMiFK0M";
       const ADMIN_ID = "6069854654";
@@ -1089,18 +1329,20 @@
       });
 
       const user = tg.initDataUnsafe?.user;
-      const userNickname = user?.username 
-        ? `@${user.username}` 
-        : (user?.first_name ? user.first_name : "Mijoz");
-
+      const userNickname = user?.username ? `@${user.username}` : (user?.first_name ? user.first_name : "Mijoz");
       const deliveryTypeStr = selectedDelivery === 'delivery' ? 'Dostavka 🛵' : 'Olib ketish 🏃‍♂️';
       const addressStr = selectedDelivery === 'delivery' ? address : 'Olib ketish (Kafe joyidan)';
+
+      let mapsUrl = "";
+      if (userLocation) {
+        mapsUrl = `\n🗺 **Xaritada ko'rish:** https://maps.google.com/?q=${userLocation.latitude},${userLocation.longitude}`;
+      }
 
       const adminMessage = `🛒 **YANGI BUYURTMA!**\n\n` +
                            `👤 **Mijoz:** ${userNickname}\n` +
                            `📞 **Tel:** ${phone}\n` +
                            `🚚 **Turi:** ${deliveryTypeStr}\n` +
-                           `📍 **Manzil:** ${addressStr}\n` +
+                           `📍 **Manzil:** ${addressStr}${mapsUrl}\n` +
                            `💳 **To'lov:** ${selectedPayment}\n\n` +
                            `📦 **Buyurtma tarkibi:**\n${itemDetails}\n` +
                            `💵 **Jami summa:** ${totalPrice.toLocaleString()} so'm`;
@@ -1117,6 +1359,32 @@
       .then(res => res.json())
       .then(data => {
         if (data.ok) {
+          if (userLocation && selectedDelivery === 'delivery') {
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: ADMIN_ID,
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude
+              })
+            }).catch(e => console.error(e));
+          }
+
+          // Buyurtmalarm ro'yxatiga saqlash
+          const newOrder = {
+            id: '#' + Math.floor(1000 + Math.random() * 9000),
+            date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            totalPrice: totalPrice,
+            itemsCount: itemsList.reduce((acc, curr) => acc + curr.count, 0)
+          };
+          renderNewOrder(newOrder);
+
+          // Cart ni tozalash
+          cart = {};
+          Object.keys(products).forEach(id => updateProductUI(id));
+          updateCartBar();
+
           closeCheckoutModal();
           document.getElementById('timerOverlay').classList.add('active');
           startTimer(25 * 60);
@@ -1128,6 +1396,27 @@
         console.error(err);
         alert("Tarmoqda xatolik yuz berdi!");
       });
+    }
+
+    function renderNewOrder(order) {
+      const ordersList = document.getElementById('orders-list');
+      if (myOrders.length === 0) {
+        ordersList.innerHTML = '';
+      }
+      myOrders.push(order);
+
+      const html = `
+        <div class="order-card">
+          <div class="order-header">
+            <span>Buyurtma ${order.id} (${order.date})</span>
+            <span class="order-status">Tayyorlanmoqda... ⏳</span>
+          </div>
+          <div style="font-size: 13px; font-weight: 700;">
+            ${order.itemsCount} ta mahsulot — ${order.totalPrice.toLocaleString()} so'm
+          </div>
+        </div>
+      `;
+      ordersList.innerHTML = html + ordersList.innerHTML;
     }
 
     function startTimer(seconds) {
@@ -1152,6 +1441,7 @@
     }
 
     function finishOrderProcess() {
+      document.getElementById('timerOverlay').classList.remove('active');
       tg.close();
     }
 
