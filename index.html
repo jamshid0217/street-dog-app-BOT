@@ -2,7 +2,7 @@
 <html lang="uz">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>STREET DOG URGANCH</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,11 +13,12 @@
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* Orqa fon qotib turishi uchun body va html stilini to'g'rilash */
-    html, body {
-      min-height: 100vh;
+    /* Body va Orqa Fon sozlamalari */
+    html {
+      height: 100%;
     }
 
     body {
@@ -26,11 +27,11 @@
       background-position: center;
       background-size: cover;
       background-repeat: no-repeat;
-      background-attachment: fixed; /* Orqa fonni mobil va kompyuterda qotirib qo'yadi */
+      background-attachment: fixed; /* Orqa fon mutlaqo qimirlamaydi */
       color: #ffffff;
       padding: 16px;
-      padding-bottom: 90px;
-      overflow-x: hidden;
+      padding-bottom: 150px; /* Savatcha va menyu ostida kontent to'silib qolmasligi uchun */
+      min-height: 100vh;
     }
 
     /* Tab Sections */
@@ -259,7 +260,7 @@
       text-align: center;
     }
 
-    /* Fixed Bottom Cart Bar */
+    /* Fixed Bottom Cart Bar - Pastki menyudan teparoqda joylashtirildi */
     .cart-bar {
       position: fixed;
       bottom: 75px;
@@ -273,9 +274,9 @@
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-      z-index: 98;
-      transform: translateY(180%);
-      transition: transform 0.3s ease;
+      z-index: 100;
+      transform: translateY(200%);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .cart-bar.active {
@@ -317,6 +318,7 @@
       justify-content: space-around;
       align-items: center;
       z-index: 99;
+      padding-bottom: env(safe-area-inset-bottom);
     }
 
     .nav-item {
@@ -405,7 +407,6 @@
       align-items: center;
     }
 
-    /* Stili dlya kartochek tovarov v zakazakh */
     .order-item-left {
       display: flex;
       align-items: center;
@@ -646,7 +647,7 @@
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
       background: #0f0f12;
-      z-index: 1000;
+      z-index: 1050;
       display: none;
       flex-direction: column;
       overflow-y: auto;
@@ -1065,7 +1066,9 @@
   </div>
 
   <script>
+    // Telegram WebApp sozlamalari
     const tg = window.Telegram.WebApp;
+    tg.ready();
     tg.expand();
 
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -1150,7 +1153,6 @@
 
       cart[id].count += delta;
 
-      // Mahsulot soni 0 ga teng yoki undan kam bo'lsa, uni savatdan o'chiramiz
       if (cart[id].count <= 0) {
         delete cart[id];
       }
@@ -1192,7 +1194,6 @@
         totalPrice += item.price * item.count;
       });
 
-      // Agar savat bo'sh bo'lsa, paneli butunlay berkitish
       if (totalItems > 0) {
         cartBar.classList.add('active');
         cartCount.innerText = `${totalItems} ta mahsulot`;
@@ -1332,7 +1333,6 @@
             }).catch(e => console.error(e));
           }
 
-          // Yangi buyurtma obyektini tuzib olish
           const newOrder = {
             id: '#' + Math.floor(1000 + Math.random() * 9000),
             date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
@@ -1341,7 +1341,6 @@
           };
           renderNewOrder(newOrder);
 
-          // Savatni tozalash va UI-ni yangilash
           cart = {};
           Object.keys(products).forEach(id => updateProductUI(id));
           updateCartBar();
@@ -1358,7 +1357,6 @@
       });
     }
 
-    // Buyurtmalarim bo'limida har bir olingan mahsulotni rasmi bilan ko'rsatuvchi funksiya
     function renderNewOrder(order) {
       const ordersList = document.getElementById('orders-list');
       if (myOrders.length === 0) {
