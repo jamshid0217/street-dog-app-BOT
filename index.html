@@ -30,7 +30,7 @@
       background-attachment: fixed; /* Orqa fon mutlaqo qimirlamaydi */
       color: #ffffff;
       padding: 16px;
-      padding-bottom: 150px; /* Savatcha va menyu ostida kontent to'silib qolmasligi uchun */
+      padding-bottom: 150px;
       min-height: 100vh;
     }
 
@@ -260,7 +260,7 @@
       text-align: center;
     }
 
-    /* Fixed Bottom Cart Bar - Pastki menyudan teparoqda joylashtirildi */
+    /* Fixed Bottom Cart Bar */
     .cart-bar {
       position: fixed;
       bottom: 75px;
@@ -1086,13 +1086,29 @@
       p5: { id: 'p5', name: 'Sprite 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', desc: 'Limon va laym ta\'mli muzdek ichimlik.' }
     };
 
-    let cart = {};
-    let myOrders = [];
+    // LOCALSTORAGE'DAN MA'LUMOTLARNI YUKLASH
+    let cart = JSON.parse(localStorage.getItem('street_dog_cart')) || {};
+    let myOrders = JSON.parse(localStorage.getItem('street_dog_orders')) || [];
     let selectedDelivery = 'delivery'; 
     let selectedPayment = 'Naqd / Karta';
     let selectedDetailId = null;
     let modalQty = 1;
     let userLocation = null;
+
+    // SAHIFA YUKLANGANDA ESKI SESHANBA/SAVAT VA BUYURTMALARNI TIKLASH
+    window.addEventListener('DOMContentLoaded', () => {
+      Object.keys(cart).forEach(id => updateProductUI(id));
+      updateCartBar();
+      renderAllOrders();
+    });
+
+    function saveCartToStorage() {
+      localStorage.setItem('street_dog_cart', JSON.stringify(cart));
+    }
+
+    function saveOrdersToStorage() {
+      localStorage.setItem('street_dog_orders', JSON.stringify(myOrders));
+    }
 
     function switchTab(tabName, element) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -1157,6 +1173,7 @@
         delete cart[id];
       }
 
+      saveCartToStorage();
       updateProductUI(id);
       updateCartBar();
     }
@@ -1339,9 +1356,15 @@
             totalPrice: totalPrice,
             items: itemsList
           };
-          renderNewOrder(newOrder);
 
+          // BUYURTMANI SAQLASH
+          myOrders.unshift(newOrder);
+          saveOrdersToStorage();
+          renderAllOrders();
+
+          // SAVATCHANI TOZALASH
           cart = {};
+          saveCartToStorage();
           Object.keys(products).forEach(id => updateProductUI(id));
           updateCartBar();
 
@@ -1357,49 +1380,59 @@
       });
     }
 
-    function renderNewOrder(order) {
+    function renderAllOrders() {
       const ordersList = document.getElementById('orders-list');
-      if (myOrders.length === 0) {
-        ordersList.innerHTML = '';
+
+      if (!myOrders || myOrders.length === 0) {
+        ordersList.innerHTML = `
+          <div class="empty-orders">
+            <i class="fa-solid fa-basket-shopping"></i>
+            <p>Sizda hali buyurtmalar yo'q</p>
+          </div>
+        `;
+        return;
       }
-      myOrders.push(order);
 
-      let itemsHtml = "";
-      order.items.forEach(item => {
-        const prodInfo = products[item.id] || {};
-        const imgSrc = prodInfo.img || 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80';
-        const fallbackSrc = prodInfo.fallback || 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80';
+      let html = "";
+      myOrders.forEach(order => {
+        let itemsHtml = "";
+        order.items.forEach(item => {
+          const prodInfo = products[item.id] || {};
+          const imgSrc = prodInfo.img || 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80';
+          const fallbackSrc = prodInfo.fallback || 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80';
 
-        itemsHtml += `
-          <li>
-            <div class="order-item-left">
-              <img class="order-item-img" src="${imgSrc}" onerror="this.src='${fallbackSrc}'" alt="${item.name}">
-              <div class="order-item-info">
-                <span class="order-item-title">${item.name}</span>
-                <span class="order-item-qty">${item.count} ta</span>
+          itemsHtml += `
+            <li>
+              <div class="order-item-left">
+                <img class="order-item-img" src="${imgSrc}" onerror="this.src='${fallbackSrc}'" alt="${item.name}">
+                <div class="order-item-info">
+                  <span class="order-item-title">${item.name}</span>
+                  <span class="order-item-qty">${item.count} ta</span>
+                </div>
               </div>
+              <span class="order-item-price">${(item.price * item.count).toLocaleString()} so'm</span>
+            </li>
+          `;
+        });
+
+        html += `
+          <div class="order-card">
+            <div class="order-header">
+              <span>Buyurtma ${order.id} (${order.date})</span>
+              <span class="order-status">Tayyorlanmoqda... ⏳</span>
             </div>
-            <span class="order-item-price">${(item.price * item.count).toLocaleString()} so'm</span>
-          </li>
+            <ul class="order-items-list">
+              ${itemsHtml}
+            </ul>
+            <div class="order-footer-total">
+              <span>Jami summa:</span>
+              <span>${order.totalPrice.toLocaleString()} so'm</span>
+            </div>
+          </div>
         `;
       });
 
-      const html = `
-        <div class="order-card">
-          <div class="order-header">
-            <span>Buyurtma ${order.id} (${order.date})</span>
-            <span class="order-status">Tayyorlanmoqda... ⏳</span>
-          </div>
-          <ul class="order-items-list">
-            ${itemsHtml}
-          </ul>
-          <div class="order-footer-total">
-            <span>Jami summa:</span>
-            <span>${order.totalPrice.toLocaleString()} so'm</span>
-          </div>
-        </div>
-      `;
-      ordersList.innerHTML = html + ordersList.innerHTML;
+      ordersList.innerHTML = html;
     }
 
     function filterCategory(category, element) {
