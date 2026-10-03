@@ -26,7 +26,7 @@
       background-position: center;
       background-size: cover;
       background-repeat: no-repeat;
-      background-attachment: fixed; /* Orqa fonni bir joyda qotirib qo'yadi */
+      background-attachment: fixed; /* Orqa fonni mobil va kompyuterda qotirib qo'yadi */
       color: #ffffff;
       padding: 16px;
       padding-bottom: 90px;
@@ -381,13 +381,76 @@
       justify-content: space-between;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       padding-bottom: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       font-size: 12px;
     }
 
     .order-status {
       color: #ff7a00;
       font-weight: 700;
+    }
+
+    .order-items-list {
+      list-style: none;
+      margin-bottom: 10px;
+      padding: 0;
+    }
+
+    .order-items-list li {
+      font-size: 13px;
+      color: #ddd;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Stili dlya kartochek tovarov v zakazakh */
+    .order-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .order-item-img {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .order-item-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .order-item-title {
+      font-weight: 700;
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .order-item-qty {
+      font-size: 11px;
+      color: #ff7a00;
+      font-weight: 600;
+    }
+
+    .order-item-price {
+      font-weight: 700;
+      color: #eee;
+    }
+
+    .order-footer-total {
+      border-top: 1px dashed rgba(255, 255, 255, 0.15);
+      padding-top: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #ff7a00;
+      display: flex;
+      justify-content: space-between;
     }
 
     .profile-card {
@@ -797,7 +860,7 @@
 
       <div class="product-card" data-category="drink" id="card-p4" onclick="openDetail('p4')">
         <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80" alt="Fanta 0.5L">
+          <img class="product-img" src="https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=400&auto=format&fit=crop&q=80" alt="Fanta 0.5L">
         </div>
         <div class="product-name">Fanta 0.5L</div>
         <div class="product-desc">Meva ta'mli salqinlashtiruvchi ichimlik</div>
@@ -1016,7 +1079,7 @@
       p1: { id: 'p1', name: 'Classic Hot-Dog', price: 22000, img: 'hotdog.jpg', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Sosiska, pishloq va maxsus sous bilan tayyorlangan ajoyib hot-dog.' },
       p2: { id: 'p2', name: 'Double Cheese Burger', price: 35000, img: 'oddiyhoddok.jpg', fallback: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Ikkitalik go\'sht va erigan cheddar pishlog\'idan iborat mazzali burger.' },
       p3: { id: 'p3', name: 'Coca-Cola 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80', desc: 'Salqinlashtiruvchi gazlangan ichimlik.' },
-      p4: { id: 'p4', name: 'Fanta 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', desc: 'Meva ta\'mli salqinlashtiruvchi ichimlik.' },
+      p4: { id: 'p4', name: 'Fanta 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=400&auto=format&fit=crop&q=80', desc: 'Meva ta\'mli salqinlashtiruvchi ichimlik.' },
       p5: { id: 'p5', name: 'Sprite 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', desc: 'Limon va laym ta\'mli muzdek ichimlik.' }
     };
 
@@ -1082,11 +1145,12 @@
 
     function changeQuantity(id, name, price, delta) {
       if (!cart[id]) {
-        cart[id] = { name, price, count: 0 };
+        cart[id] = { id, name, price, count: 0 };
       }
 
       cart[id].count += delta;
 
+      // Mahsulot soni 0 ga teng yoki undan kam bo'lsa, uni savatdan o'chiramiz
       if (cart[id].count <= 0) {
         delete cart[id];
       }
@@ -1128,6 +1192,7 @@
         totalPrice += item.price * item.count;
       });
 
+      // Agar savat bo'sh bo'lsa, paneli butunlay berkitish
       if (totalItems > 0) {
         cartBar.classList.add('active');
         cartCount.innerText = `${totalItems} ta mahsulot`;
@@ -1267,14 +1332,16 @@
             }).catch(e => console.error(e));
           }
 
+          // Yangi buyurtma obyektini tuzib olish
           const newOrder = {
             id: '#' + Math.floor(1000 + Math.random() * 9000),
             date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
             totalPrice: totalPrice,
-            itemsCount: itemsList.reduce((acc, curr) => acc + curr.count, 0)
+            items: itemsList
           };
           renderNewOrder(newOrder);
 
+          // Savatni tozalash va UI-ni yangilash
           cart = {};
           Object.keys(products).forEach(id => updateProductUI(id));
           updateCartBar();
@@ -1291,6 +1358,7 @@
       });
     }
 
+    // Buyurtmalarim bo'limida har bir olingan mahsulotni rasmi bilan ko'rsatuvchi funksiya
     function renderNewOrder(order) {
       const ordersList = document.getElementById('orders-list');
       if (myOrders.length === 0) {
@@ -1298,14 +1366,38 @@
       }
       myOrders.push(order);
 
+      let itemsHtml = "";
+      order.items.forEach(item => {
+        const prodInfo = products[item.id] || {};
+        const imgSrc = prodInfo.img || 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80';
+        const fallbackSrc = prodInfo.fallback || 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80';
+
+        itemsHtml += `
+          <li>
+            <div class="order-item-left">
+              <img class="order-item-img" src="${imgSrc}" onerror="this.src='${fallbackSrc}'" alt="${item.name}">
+              <div class="order-item-info">
+                <span class="order-item-title">${item.name}</span>
+                <span class="order-item-qty">${item.count} ta</span>
+              </div>
+            </div>
+            <span class="order-item-price">${(item.price * item.count).toLocaleString()} so'm</span>
+          </li>
+        `;
+      });
+
       const html = `
         <div class="order-card">
           <div class="order-header">
             <span>Buyurtma ${order.id} (${order.date})</span>
             <span class="order-status">Tayyorlanmoqda... ⏳</span>
           </div>
-          <div style="font-size: 13px; font-weight: 700;">
-            ${order.itemsCount} ta mahsulot — ${order.totalPrice.toLocaleString()} so'm
+          <ul class="order-items-list">
+            ${itemsHtml}
+          </ul>
+          <div class="order-footer-total">
+            <span>Jami summa:</span>
+            <span>${order.totalPrice.toLocaleString()} so'm</span>
           </div>
         </div>
       `;
