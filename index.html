@@ -730,6 +730,63 @@
         </div>
       </div>
     </div>
+
+    <div class="product-card" data-category="drink" id="card-p3" onclick="openDetail('p3')">
+      <div class="product-img-box">
+        <img class="product-img" src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80" alt="Coca-Cola 0.5L">
+      </div>
+      <div class="product-name">Coca-Cola 0.5L</div>
+      <div class="product-desc">Salqinlashtiruvchi gazlangan ichimlik</div>
+      <div class="product-bottom">
+        <div class="product-price">8,000 so'm</div>
+        <button class="add-btn" id="btn-p3" onclick="event.stopPropagation(); changeQuantity('p3', 'Coca-Cola 0.5L', 8000, 1)">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="quantity-control" id="ctrl-p3" onclick="event.stopPropagation();">
+          <button class="qty-btn" onclick="changeQuantity('p3', 'Coca-Cola 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
+          <span class="qty-count" id="count-p3">0</span>
+          <button class="qty-btn" onclick="changeQuantity('p3', 'Coca-Cola 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card" data-category="drink" id="card-p4" onclick="openDetail('p4')">
+      <div class="product-img-box">
+        <img class="product-img" src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80" alt="Fanta 0.5L">
+      </div>
+      <div class="product-name">Fanta 0.5L</div>
+      <div class="product-desc">Meva ta'mli salqinlashtiruvchi ichimlik</div>
+      <div class="product-bottom">
+        <div class="product-price">8,000 so'm</div>
+        <button class="add-btn" id="btn-p4" onclick="event.stopPropagation(); changeQuantity('p4', 'Fanta 0.5L', 8000, 1)">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="quantity-control" id="ctrl-p4" onclick="event.stopPropagation();">
+          <button class="qty-btn" onclick="changeQuantity('p4', 'Fanta 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
+          <span class="qty-count" id="count-p4">0</span>
+          <button class="qty-btn" onclick="changeQuantity('p4', 'Fanta 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="product-card" data-category="drink" id="card-p5" onclick="openDetail('p5')">
+      <div class="product-img-box">
+        <img class="product-img" src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80" alt="Sprite 0.5L">
+      </div>
+      <div class="product-name">Sprite 0.5L</div>
+      <div class="product-desc">Limon va laym ta'mli muzdek ichimlik</div>
+      <div class="product-bottom">
+        <div class="product-price">8,000 so'm</div>
+        <button class="add-btn" id="btn-p5" onclick="event.stopPropagation(); changeQuantity('p5', 'Sprite 0.5L', 8000, 1)">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="quantity-control" id="ctrl-p5" onclick="event.stopPropagation();">
+          <button class="qty-btn" onclick="changeQuantity('p5', 'Sprite 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
+          <span class="qty-count" id="count-p5">0</span>
+          <button class="qty-btn" onclick="changeQuantity('p5', 'Sprite 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Cart Bar -->
@@ -856,7 +913,10 @@
 
     const products = {
       p1: { id: 'p1', name: 'Classic Hot-Dog', price: 22000, img: 'hotdog.jpg', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Sosiska, pishloq va maxsus sous bilan tayyorlangan ajoyib hot-dog.' },
-      p2: { id: 'p2', name: 'Double Cheese Burger', price: 35000, img: 'oddiyhoddok.jpg', fallback: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Ikkitalik go\'sht va erigan cheddar pishlog\'idan iborat mazzali burger.' }
+      p2: { id: 'p2', name: 'Double Cheese Burger', price: 35000, img: 'oddiyhoddok.jpg', fallback: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Ikkitalik go\'sht va erigan cheddar pishlog\'idan iborat mazzali burger.' },
+      p3: { id: 'p3', name: 'Coca-Cola 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80', desc: 'Salqinlashtiruvchi gazlangan ichimlik.' },
+      p4: { id: 'p4', name: 'Fanta 0.5L', price: 8000, img: 'https://share.google/ocq6FAVidKdFZ5Ota', fallback: 'https://share.google/ocq6FAVidKdFZ5Ota', desc: 'Meva ta\'mli salqinlashtiruvchi ichimlik.' },
+      p5: { id: 'p5', name: 'Sprite 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', desc: 'Limon va laym ta\'mli muzdek ichimlik.' }
     };
 
     let cart = {};
@@ -1001,8 +1061,11 @@
       }
     }
 
-    // Buyurtmani tasdiqlash va botga yuborish
+    // Buyurtmani tasdiqlash va adminga to'g'ridan-to'g'ri yuborish
     function confirmOrder() {
+      const BOT_TOKEN = "8983485871:AAFzezqjvtLgNDQ-LfIxSsMMttbdZMiFK0M";
+      const ADMIN_ID = "6069854654";
+
       const phone = document.getElementById('phoneInput').value.trim();
       const address = document.getElementById('addressInput').value.trim();
 
@@ -1018,26 +1081,53 @@
 
       const itemsList = Object.values(cart);
       let totalPrice = 0;
+      let itemDetails = "";
+
       itemsList.forEach(item => {
         totalPrice += item.price * item.count;
+        itemDetails += `• ${item.name} x ${item.count} = ${(item.price * item.count).toLocaleString()} so'm\n`;
       });
 
-      const orderData = {
-        items: itemsList,
-        totalPrice: totalPrice,
-        deliveryType: selectedDelivery === 'delivery' ? 'Dostavka 🛵' : 'Olib ketish 🏃‍♂️',
-        address: selectedDelivery === 'delivery' ? address : 'Olib ketish (Kafe joyidan)',
-        phone: phone,
-        paymentMethod: selectedPayment
-      };
+      const user = tg.initDataUnsafe?.user;
+      const userNickname = user?.username 
+        ? `@${user.username}` 
+        : (user?.first_name ? user.first_name : "Mijoz");
 
-      // 1. Telegram Bot backendga ma'lumot jo'natish
-      tg.sendData(JSON.stringify(orderData));
+      const deliveryTypeStr = selectedDelivery === 'delivery' ? 'Dostavka 🛵' : 'Olib ketish 🏃‍♂️';
+      const addressStr = selectedDelivery === 'delivery' ? address : 'Olib ketish (Kafe joyidan)';
 
-      // 2. Taymer oynasini ochish va 25 minutlik teskari sanoqni boshlash
-      closeCheckoutModal();
-      document.getElementById('timerOverlay').classList.add('active');
-      startTimer(25 * 60); 
+      const adminMessage = `🛒 **YANGI BUYURTMA!**\n\n` +
+                           `👤 **Mijoz:** ${userNickname}\n` +
+                           `📞 **Tel:** ${phone}\n` +
+                           `🚚 **Turi:** ${deliveryTypeStr}\n` +
+                           `📍 **Manzil:** ${addressStr}\n` +
+                           `💳 **To'lov:** ${selectedPayment}\n\n` +
+                           `📦 **Buyurtma tarkibi:**\n${itemDetails}\n` +
+                           `💵 **Jami summa:** ${totalPrice.toLocaleString()} so'm`;
+
+      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: ADMIN_ID,
+          text: adminMessage,
+          parse_mode: 'Markdown'
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok) {
+          closeCheckoutModal();
+          document.getElementById('timerOverlay').classList.add('active');
+          startTimer(25 * 60);
+        } else {
+          alert("Xatolik yuz berdi, qaytadan urinib ko'ring.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Tarmoqda xatolik yuz berdi!");
+      });
     }
 
     function startTimer(seconds) {
