@@ -15,15 +15,22 @@
       user-select: none;
     }
 
+    /* Orqa fon qotib turishi uchun body va html stilini to'g'rilash */
+    html, body {
+      min-height: 100vh;
+    }
+
     body {
-      background: linear-gradient(180deg, rgba(10, 10, 12, 0.45), rgba(10, 10, 12, 0.65)),
-                  url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80') center/cover no-repeat fixed;
+      background-image: linear-gradient(180deg, rgba(10, 10, 12, 0.75), rgba(10, 10, 12, 0.85)),
+                        url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80');
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed; /* Orqa fonni bir joyda qotirib qo'yadi */
       color: #ffffff;
       padding: 16px;
       padding-bottom: 90px;
       overflow-x: hidden;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
     }
 
     /* Tab Sections */
@@ -36,9 +43,6 @@
 
     /* Header & Greeting */
     .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       margin-bottom: 16px;
     }
 
@@ -58,32 +62,16 @@
       color: #ff7a00;
     }
 
-    .avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      color: #ff7a00;
-    }
-
     /* Search Bar */
     .search-box {
       display: flex;
       align-items: center;
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 16px;
       padding: 12px 16px;
       margin-bottom: 20px;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(10px);
     }
 
     .search-box i {
@@ -123,7 +111,7 @@
       min-width: 72px;
       height: 75px;
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       color: #eee;
       font-size: 11px;
@@ -131,8 +119,7 @@
       gap: 8px;
       cursor: pointer;
       transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(5px);
     }
 
     .cat-btn.active {
@@ -164,15 +151,13 @@
 
     .product-card {
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 12px;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
       display: flex;
       flex-direction: column;
       cursor: pointer;
+      backdrop-filter: blur(10px);
     }
 
     .product-img-box {
@@ -184,7 +169,7 @@
       margin-bottom: 8px;
       border-radius: 14px;
       overflow: hidden;
-      background: rgba(0, 0, 0, 0.15);
+      background: rgba(0, 0, 0, 0.2);
     }
 
     .product-img {
@@ -236,7 +221,6 @@
       justify-content: center;
       font-size: 14px;
       cursor: pointer;
-      box-shadow: 0 4px 10px rgba(255, 122, 0, 0.3);
     }
 
     .quantity-control {
@@ -281,10 +265,8 @@
       bottom: 75px;
       left: 16px;
       right: 16px;
-      background: rgba(18, 18, 22, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: #18181f;
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 20px;
       padding: 12px 20px;
       display: flex;
@@ -292,8 +274,8 @@
       align-items: center;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
       z-index: 98;
-      transform: translateY(150%);
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform: translateY(180%);
+      transition: transform 0.3s ease;
     }
 
     .cart-bar.active {
@@ -320,7 +302,6 @@
       font-weight: 700;
       font-size: 13px;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(255, 122, 0, 0.4);
     }
 
     /* Bottom Navigation Bar */
@@ -330,10 +311,8 @@
       left: 0;
       right: 0;
       height: 65px;
-      background: rgba(15, 15, 18, 0.92);
+      background: #121216;
       border-top: 1px solid rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
       display: flex;
       justify-content: space-around;
       align-items: center;
@@ -350,7 +329,6 @@
       font-weight: 600;
       gap: 4px;
       cursor: pointer;
-      transition: all 0.2s ease;
       width: 33%;
     }
 
@@ -362,7 +340,7 @@
       color: #ff7a00;
     }
 
-    /* Orders Page Styles */
+    /* Orders & Profile Page Styles */
     .orders-container, .profile-container {
       padding: 10px 0;
     }
@@ -371,6 +349,22 @@
       font-size: 20px;
       font-weight: 800;
       margin-bottom: 16px;
+    }
+
+    .empty-orders {
+      text-align: center;
+      color: #aaa;
+      padding: 40px 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .empty-orders i {
+      font-size: 40px;
+      color: #ff7a00;
+      margin-bottom: 12px;
     }
 
     .order-card {
@@ -441,13 +435,11 @@
       font-size: 13px;
     }
 
-    /* Modal Checkout Screen */
+    /* Checkout Modal */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.8);
       z-index: 1100;
       display: flex;
       align-items: flex-end;
@@ -469,7 +461,7 @@
       padding: 24px;
       border-top: 1px solid rgba(255, 255, 255, 0.2);
       transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: transform 0.3s ease;
       max-height: 90vh;
       overflow-y: auto;
     }
@@ -515,7 +507,6 @@
       padding: 12px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s ease;
     }
 
     .option-card i {
@@ -533,7 +524,6 @@
     .option-card.active {
       border-color: #ff7a00;
       background: rgba(255, 122, 0, 0.15);
-      box-shadow: 0 0 12px rgba(255, 122, 0, 0.3);
     }
 
     .form-group {
@@ -546,7 +536,6 @@
       color: #aaa;
       margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
       font-weight: 600;
     }
 
@@ -563,10 +552,6 @@
       border-radius: 12px;
       font-size: 16px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
     }
 
     .form-input {
@@ -591,7 +576,6 @@
       font-weight: 800;
       cursor: pointer;
       margin-top: 10px;
-      box-shadow: 0 6px 20px rgba(255, 122, 0, 0.4);
     }
 
     /* Detail Modal */
@@ -621,8 +605,6 @@
       width: 40px; height: 40px;
       border-radius: 50%;
       background: rgba(255,255,255,0.15);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.2);
       color: #fff;
       display: flex; align-items: center; justify-content: center;
@@ -652,8 +634,6 @@
       border-top: 1px solid rgba(255, 255, 255, 0.15);
       padding: 24px;
       flex: 1;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
     }
 
     .detail-title-row {
@@ -687,9 +667,7 @@
       font-size: 13px;
     }
 
-    .switch {
-      position: relative; display: inline-block; width: 44px; height: 24px;
-    }
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
@@ -716,100 +694,26 @@
     .add-to-cart-btn {
       flex: 1; background: linear-gradient(135deg, #ff7a00, #ff4500); color: #fff; border: none;
       padding: 14px; border-radius: 16px; font-weight: 800; font-size: 14px;
-      cursor: pointer; text-align: center; box-shadow: 0 4px 15px rgba(255, 122, 0, 0.4);
-    }
-
-    /* Countdown Modal */
-    .timer-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(10, 10, 12, 0.92);
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      z-index: 2000;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      text-align: center;
-    }
-
-    .timer-overlay.active {
-      display: flex;
-    }
-
-    .timer-icon {
-      font-size: 48px;
-      color: #ff7a00;
-      margin-bottom: 16px;
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-      100% { transform: scale(1); }
-    }
-
-    .timer-title {
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-
-    .timer-sub {
-      font-size: 13px;
-      color: #aaa;
-      margin-bottom: 24px;
-    }
-
-    .timer-clock {
-      font-size: 44px;
-      font-weight: 900;
-      letter-spacing: 2px;
-      color: #ff7a00;
-      background: rgba(255, 122, 0, 0.1);
-      border: 1px solid rgba(255, 122, 0, 0.3);
-      padding: 16px 32px;
-      border-radius: 20px;
-      margin-bottom: 30px;
-      box-shadow: 0 0 30px rgba(255, 122, 0, 0.2);
-    }
-
-    .close-timer-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #fff;
-      padding: 12px 28px;
-      border-radius: 14px;
-      font-weight: 700;
-      cursor: pointer;
+      cursor: pointer; text-align: center;
     }
   </style>
 </head>
 <body>
 
-  <!-- TAB 1: BOSH SAHIFA -->
+  <!-- TAB 1: BOSH SAHIFA / MENYU -->
   <div id="tab-home" class="tab-content active">
-    <!-- Header -->
     <div class="header">
       <div class="greeting">
         <p id="user-name">Xush kelibsiz! 👋</p>
         <h1>STREET DOGGA 🌭<br><span>YOQIMLI ISHTAHA TILAYMIZ</span></h1>
       </div>
-      <div class="avatar">
-        <i class="fa-solid fa-user"></i>
-      </div>
     </div>
 
-    <!-- Search -->
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass"></i>
       <input type="text" id="searchInput" placeholder="Sevimli taomingizni qidiring...">
     </div>
 
-    <!-- Categories -->
     <div class="categories">
       <div class="cat-btn active" onclick="filterCategory('all', this)">
         <i class="fa-solid fa-border-all"></i>
@@ -829,12 +733,10 @@
       </div>
     </div>
 
-    <!-- Section Title -->
     <div class="section-title">
       <h2>Ommabop Taomlar</h2>
     </div>
 
-    <!-- Product Grid -->
     <div class="product-grid">
       <div class="product-card" data-category="hotdog" id="card-p1" onclick="openDetail('p1')">
         <div class="product-img-box">
@@ -937,12 +839,10 @@
   <div id="tab-orders" class="tab-content">
     <div class="orders-container">
       <div class="page-title">Mening buyurtmalarim 📦</div>
-      
       <div id="orders-list">
-        <!-- Buyurtmalar bo'lsa JavaScript orqali shu yerga tushadi -->
-        <div class="order-card" style="text-align: center; color: #aaa; padding: 30px 10px;">
-          <i class="fa-solid fa-receipt" style="font-size: 32px; margin-bottom: 10px; color: #ff7a00;"></i>
-          <p>Hozircha buyurtmalaringiz yo'q</p>
+        <div class="empty-orders">
+          <i class="fa-solid fa-basket-shopping"></i>
+          <p>Sizda hali buyurtmalar yo'q</p>
         </div>
       </div>
     </div>
@@ -969,13 +869,13 @@
         </div>
         <div class="profile-menu-item">
           <span><i class="fa-solid fa-shield-halved" style="color:#ff7a00; margin-right:8px;"></i> Ilova versiyasi</span>
-          <span>v2.1.0</span>
+          <span>v2.2.0</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Cart Bar (Menyu ustida turadi) -->
+  <!-- Cart Bar -->
   <div class="cart-bar" id="cartBar">
     <div class="cart-info">
       <p id="cartCount">0 ta mahsulot</p>
@@ -986,15 +886,15 @@
 
   <!-- Bottom Navigation Bar -->
   <div class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('home', this)">
+    <div class="nav-item active" id="nav-home" onclick="switchTab('home', this)">
       <i class="fa-solid fa-utensils"></i>
       <span>Menyu</span>
     </div>
-    <div class="nav-item" onclick="switchTab('orders', this)">
+    <div class="nav-item" id="nav-orders" onclick="switchTab('orders', this)">
       <i class="fa-solid fa-clock-rotate-left"></i>
       <span>Buyurtmalarim</span>
     </div>
-    <div class="nav-item" onclick="switchTab('profile', this)">
+    <div class="nav-item" id="nav-profile" onclick="switchTab('profile', this)">
       <i class="fa-solid fa-user"></i>
       <span>Profil</span>
     </div>
@@ -1101,15 +1001,6 @@
     </div>
   </div>
 
-  <!-- Countdown Overlay -->
-  <div class="timer-overlay" id="timerOverlay">
-    <i class="fa-solid fa-fire-burner timer-icon"></i>
-    <div class="timer-title">Buyurtmangiz qabul qilindi! 🎉</div>
-    <div class="timer-sub">Taomingiz tayyorlanmoqda va tez orada yetkaziladi:</div>
-    <div class="timer-clock" id="timerClock">25:00</div>
-    <button class="close-timer-btn" onclick="finishOrderProcess()">Ilovani yopish</button>
-  </div>
-
   <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
@@ -1125,7 +1016,7 @@
       p1: { id: 'p1', name: 'Classic Hot-Dog', price: 22000, img: 'hotdog.jpg', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Sosiska, pishloq va maxsus sous bilan tayyorlangan ajoyib hot-dog.' },
       p2: { id: 'p2', name: 'Double Cheese Burger', price: 35000, img: 'oddiyhoddok.jpg', fallback: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Ikkitalik go\'sht va erigan cheddar pishlog\'idan iborat mazzali burger.' },
       p3: { id: 'p3', name: 'Coca-Cola 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80', desc: 'Salqinlashtiruvchi gazlangan ichimlik.' },
-      p4: { id: 'p4', name: 'Fanta 0.5L', price: 8000, img: 'https://share.google/ocq6FAVidKdFZ5Ota', fallback: 'https://share.google/ocq6FAVidKdFZ5Ota', desc: 'Meva ta\'mli salqinlashtiruvchi ichimlik.' },
+      p4: { id: 'p4', name: 'Fanta 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', desc: 'Meva ta\'mli salqinlashtiruvchi ichimlik.' },
       p5: { id: 'p5', name: 'Sprite 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', desc: 'Limon va laym ta\'mli muzdek ichimlik.' }
     };
 
@@ -1135,16 +1026,19 @@
     let selectedPayment = 'Naqd / Karta';
     let selectedDetailId = null;
     let modalQty = 1;
-    let countdownInterval = null;
     let userLocation = null;
 
-    // Tab o'tkazish mantig'i
     function switchTab(tabName, element) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
 
       document.getElementById(`tab-${tabName}`).classList.add('active');
-      if (element) element.classList.add('active');
+      if (element) {
+        element.classList.add('active');
+      } else {
+        const navEl = document.getElementById(`nav-${tabName}`);
+        if (navEl) navEl.classList.add('active');
+      }
     }
 
     function openDetail(id) {
@@ -1240,6 +1134,8 @@
         cartTotal.innerText = `${totalPrice.toLocaleString()} so'm`;
       } else {
         cartBar.classList.remove('active');
+        cartCount.innerText = "0 ta mahsulot";
+        cartTotal.innerText = "0 so'm";
       }
     }
 
@@ -1371,7 +1267,6 @@
             }).catch(e => console.error(e));
           }
 
-          // Buyurtmalarm ro'yxatiga saqlash
           const newOrder = {
             id: '#' + Math.floor(1000 + Math.random() * 9000),
             date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
@@ -1380,14 +1275,12 @@
           };
           renderNewOrder(newOrder);
 
-          // Cart ni tozalash
           cart = {};
           Object.keys(products).forEach(id => updateProductUI(id));
           updateCartBar();
 
           closeCheckoutModal();
-          document.getElementById('timerOverlay').classList.add('active');
-          startTimer(25 * 60);
+          switchTab('orders', null);
         } else {
           alert("Xatolik yuz berdi, qaytadan urinib ko'ring.");
         }
@@ -1417,32 +1310,6 @@
         </div>
       `;
       ordersList.innerHTML = html + ordersList.innerHTML;
-    }
-
-    function startTimer(seconds) {
-      let timeLeft = seconds;
-      const timerClock = document.getElementById('timerClock');
-
-      if (countdownInterval) clearInterval(countdownInterval);
-
-      countdownInterval = setInterval(() => {
-        const minutes = Math.floor(timeLeft / 60);
-        const secs = timeLeft % 60;
-
-        timerClock.innerText = `${minutes < 10 ? '0' : ''}${minutes}:${secs < 10 ? '0' : ''}${secs}`;
-
-        if (timeLeft <= 0) {
-          clearInterval(countdownInterval);
-          timerClock.innerText = "00:00 - Yoqimli ishtaha!";
-        } else {
-          timeLeft--;
-        }
-      }, 1000);
-    }
-
-    function finishOrderProcess() {
-      document.getElementById('timerOverlay').classList.remove('active');
-      tg.close();
     }
 
     function filterCategory(category, element) {
