@@ -16,25 +16,41 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Body va Orqa Fon sozlamalari */
-    html {
+    html, body {
       height: 100%;
+      margin: 0;
+      padding: 0;
     }
 
     body {
-      background-image: linear-gradient(180deg, rgba(10, 10, 12, 0.75), rgba(10, 10, 12, 0.85)),
+      background-image: linear-gradient(180deg, rgba(10, 10, 12, 0.55), rgba(10, 10, 12, 0.65)),
                         url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80');
       background-position: center;
       background-size: cover;
       background-repeat: no-repeat;
-      background-attachment: fixed; /* Orqa fon mutlaqo qimirlamaydi */
+      background-attachment: scroll;
       color: #ffffff;
       padding: 16px;
       padding-bottom: 150px;
       min-height: 100vh;
+      position: relative;
     }
 
-    /* Tab Sections */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-image: linear-gradient(180deg, rgba(10, 10, 12, 0.55), rgba(10, 10, 12, 0.65)),
+                        url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80');
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      z-index: -1;
+    }
+
     .tab-content {
       display: none;
     }
@@ -42,7 +58,6 @@
       display: block;
     }
 
-    /* Header & Greeting */
     .header {
       margin-bottom: 16px;
     }
@@ -63,7 +78,6 @@
       color: #ff7a00;
     }
 
-    /* Search Bar */
     .search-box {
       display: flex;
       align-items: center;
@@ -90,7 +104,6 @@
       width: 100%;
     }
 
-    /* Categories */
     .categories {
       display: flex;
       gap: 12px;
@@ -130,7 +143,6 @@
       box-shadow: 0 8px 20px rgba(255, 122, 0, 0.4);
     }
 
-    /* Section Title */
     .section-title {
       display: flex;
       justify-content: space-between;
@@ -143,7 +155,6 @@
       font-weight: 700;
     }
 
-    /* Product Grid */
     .product-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -260,7 +271,6 @@
       text-align: center;
     }
 
-    /* Fixed Bottom Cart Bar */
     .cart-bar {
       position: fixed;
       bottom: 75px;
@@ -305,7 +315,6 @@
       cursor: pointer;
     }
 
-    /* Bottom Navigation Bar */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -342,7 +351,6 @@
       color: #ff7a00;
     }
 
-    /* Orders & Profile Page Styles */
     .orders-container, .profile-container {
       padding: 10px 0;
     }
@@ -499,7 +507,6 @@
       font-size: 13px;
     }
 
-    /* Checkout Modal */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -642,7 +649,6 @@
       margin-top: 10px;
     }
 
-    /* Detail Modal */
     .detail-modal {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -711,39 +717,6 @@
     .detail-price { font-size: 18px; font-weight: 800; color: #ff7a00; }
     .detail-desc { font-size: 12px; color: #aaa; line-height: 1.5; margin-bottom: 20px; }
 
-    .option-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: #ddd; }
-    .size-opts { display: flex; gap: 10px; margin-bottom: 20px; }
-    .size-btn {
-      flex: 1; padding: 10px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 12px; color: #fff;
-      font-size: 12px; font-weight: 600; text-align: center;
-      cursor: pointer;
-    }
-    .size-btn.active { background: #ff7a00; border-color: #ff7a00; }
-
-    .switch-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-      font-size: 13px;
-    }
-
-    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(255,255,255,0.15); transition: .3s; border-radius: 24px;
-    }
-    .slider:before {
-      position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
-      background-color: white; transition: .3s; border-radius: 50%;
-    }
-    input:checked + .slider { background-color: #ff7a00; }
-    input:checked + .slider:before { transform: translateX(20px); }
-
     .detail-footer {
       display: flex; gap: 12px; align-items: center; margin-top: 20px;
     }
@@ -783,13 +756,13 @@
         <i class="fa-solid fa-border-all"></i>
         <span>Barchasi</span>
       </div>
+      <div class="cat-btn" onclick="filterCategory('hotdog', this)">
+        <i class="fa-solid fa-hotdog"></i>
+        <span>Xot-Dog</span>
+      </div>
       <div class="cat-btn" onclick="filterCategory('burger', this)">
         <i class="fa-solid fa-burger"></i>
         <span>Burger</span>
-      </div>
-      <div class="cat-btn" onclick="filterCategory('hotdog', this)">
-        <i class="fa-solid fa-hotdog"></i>
-        <span>Hot-Dog</span>
       </div>
       <div class="cat-btn" onclick="filterCategory('garnir', this)">
         <i class="fa-solid fa-bowl-food"></i>
@@ -802,566 +775,11 @@
     </div>
 
     <div class="section-title">
-      <h2>Ommabop Taomlar</h2>
+      <h2>Menyu</h2>
     </div>
 
-    <div class="product-grid">
-
-      <!-- BURGERLAR -->
-      <div class="product-card" data-category="burger" id="card-b1" onclick="openDetail('b1')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80" alt="Chikken burger">
-        </div>
-        <div class="product-name">Chikken burger</div>
-        <div class="product-desc">350 g — Mazali tovuqli burger</div>
-        <div class="product-bottom">
-          <div class="product-price">42,000 so'm</div>
-          <button class="add-btn" id="btn-b1" onclick="event.stopPropagation(); changeQuantity('b1', 'Chikken burger', 42000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-b1" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('b1', 'Chikken burger', 42000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-b1">0</span>
-            <button class="qty-btn" onclick="changeQuantity('b1', 'Chikken burger', 42000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="burger" id="card-b2" onclick="openDetail('b2')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80" alt="Steyk burger">
-        </div>
-        <div class="product-name">Steyk burger</div>
-        <div class="product-desc">450 g — Sharbatli steyk go'shti va pishloq</div>
-        <div class="product-bottom">
-          <div class="product-price">66,000 so'm</div>
-          <button class="add-btn" id="btn-b2" onclick="event.stopPropagation(); changeQuantity('b2', 'Steyk burger', 66000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-b2" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('b2', 'Steyk burger', 66000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-b2">0</span>
-            <button class="qty-btn" onclick="changeQuantity('b2', 'Steyk burger', 66000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="burger" id="card-b3" onclick="openDetail('b3')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80" alt="Strit burger">
-        </div>
-        <div class="product-name">Strit burger</div>
-        <div class="product-desc">400 g — Maxsus strit uslubidagi burger</div>
-        <div class="product-bottom">
-          <div class="product-price">58,000 so'm</div>
-          <button class="add-btn" id="btn-b3" onclick="event.stopPropagation(); changeQuantity('b3', 'Strit burger', 58000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-b3" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('b3', 'Strit burger', 58000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-b3">0</span>
-            <button class="qty-btn" onclick="changeQuantity('b3', 'Strit burger', 58000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="burger" id="card-b4" onclick="openDetail('b4')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=400&auto=format&fit=crop&q=80" alt="Chizburger">
-        </div>
-        <div class="product-name">Chizburger</div>
-        <div class="product-desc">330 g — Klassik pishloqli burger</div>
-        <div class="product-bottom">
-          <div class="product-price">38,000 so'm</div>
-          <button class="add-btn" id="btn-b4" onclick="event.stopPropagation(); changeQuantity('b4', 'Chizburger', 38000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-b4" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('b4', 'Chizburger', 38000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-b4">0</span>
-            <button class="qty-btn" onclick="changeQuantity('b4', 'Chizburger', 38000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="burger" id="card-b5" onclick="openDetail('b5')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80" alt="Tryufelli burger">
-        </div>
-        <div class="product-name">Tryufelli burger</div>
-        <div class="product-desc">400 g — Maxsus tryufel sousi bilan</div>
-        <div class="product-bottom">
-          <div class="product-price">58,000 so'm</div>
-          <button class="add-btn" id="btn-b5" onclick="event.stopPropagation(); changeQuantity('b5', 'Tryufelli burger', 58000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-b5" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('b5', 'Tryufelli burger', 58000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-b5">0</span>
-            <button class="qty-btn" onclick="changeQuantity('b5', 'Tryufelli burger', 58000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="burger" id="card-b6" onclick="openDetail('b6')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80" alt="Klassik burger">
-        </div>
-        <div class="product-name">Klassik burger</div>
-        <div class="product-desc">400 g — An'anaviy va mazali burger</div>
-        <div class="product-bottom">
-          <div class="product-price">58,000 so'm</div>
-          <button class="add-btn" id="btn-b6" onclick="event.stopPropagation(); changeQuantity('b6', 'Klassik burger', 58000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-b6" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('b6', 'Klassik burger', 58000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-b6">0</span>
-            <button class="qty-btn" onclick="changeQuantity('b6', 'Klassik burger', 58000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="burger" id="card-b7" onclick="openDetail('b7')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80" alt="Achchiq burger">
-        </div>
-        <div class="product-name">Achchiq burger</div>
-        <div class="product-desc">400 g — Achchiq qalampir va maxsus sous</div>
-        <div class="product-bottom">
-          <div class="product-price">58,000 so'm</div>
-          <button class="add-btn" id="btn-b7" onclick="event.stopPropagation(); changeQuantity('b7', 'Achchiq burger', 58000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-b7" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('b7', 'Achchiq burger', 58000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-b7">0</span>
-            <button class="qty-btn" onclick="changeQuantity('b7', 'Achchiq burger', 58000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- HOT-DOG VA FASTFUDLAR -->
-      <div class="product-card" data-category="hotdog" id="card-h1" onclick="openDetail('h1')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Chikago xot-dog">
-        </div>
-        <div class="product-name">Chikago xot-dog</div>
-        <div class="product-desc">250 g — Chikago uslubidagi xot-dog</div>
-        <div class="product-bottom">
-          <div class="product-price">30,000 so'm</div>
-          <button class="add-btn" id="btn-h1" onclick="event.stopPropagation(); changeQuantity('h1', 'Chikago xot-dog', 30000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h1" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h1', 'Chikago xot-dog', 30000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h1">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h1', 'Chikago xot-dog', 30000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h2" onclick="openDetail('h2')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Fransuzcha xot-dog">
-        </div>
-        <div class="product-name">Fransuzcha xot-dog</div>
-        <div class="product-desc">180 g — Qarsillama kulcha va sosiska</div>
-        <div class="product-bottom">
-          <div class="product-price">26,000 so'm</div>
-          <button class="add-btn" id="btn-h2" onclick="event.stopPropagation(); changeQuantity('h2', 'Fransuzcha xot-dog', 26000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h2" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h2', 'Fransuzcha xot-dog', 26000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h2">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h2', 'Fransuzcha xot-dog', 26000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h3" onclick="openDetail('h3')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Chikken xot-dog">
-        </div>
-        <div class="product-name">Chikken xot-dog</div>
-        <div class="product-desc">250 g — Tovuqli sosiska va sous</div>
-        <div class="product-bottom">
-          <div class="product-price">30,000 so'm</div>
-          <button class="add-btn" id="btn-h3" onclick="event.stopPropagation(); changeQuantity('h3', 'Chikken xot-dog', 30000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h3" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h3', 'Chikken xot-dog', 30000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h3">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h3', 'Chikken xot-dog', 30000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h4" onclick="openDetail('h4')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Amerikancha xot-dog">
-        </div>
-        <div class="product-name">Amerikancha xot-dog</div>
-        <div class="product-desc">380 g — Katta o'lchamdagi amerikancha xot-dog</div>
-        <div class="product-bottom">
-          <div class="product-price">46,000 so'm</div>
-          <button class="add-btn" id="btn-h4" onclick="event.stopPropagation(); changeQuantity('h4', 'Amerikancha xot-dog', 46000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h4" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h4', 'Amerikancha xot-dog', 46000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h4">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h4', 'Amerikancha xot-dog', 46000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h5" onclick="openDetail('h5')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Klassik xot-dog">
-        </div>
-        <div class="product-name">Klassik xot-dog</div>
-        <div class="product-desc">250 g — An'anaviy klassik xot-dog</div>
-        <div class="product-bottom">
-          <div class="product-price">34,000 so'm</div>
-          <button class="add-btn" id="btn-h5" onclick="event.stopPropagation(); changeQuantity('h5', 'Klassik xot-dog', 34000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h5" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h5', 'Klassik xot-dog', 34000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h5">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h5', 'Klassik xot-dog', 34000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h6" onclick="openDetail('h6')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Nyu-York xot-dog">
-        </div>
-        <div class="product-name">Nyu-York xot-dog</div>
-        <div class="product-desc">250 g — Nyu-York uslubidagi hot-dog</div>
-        <div class="product-bottom">
-          <div class="product-price">30,000 so'm</div>
-          <button class="add-btn" id="btn-h6" onclick="event.stopPropagation(); changeQuantity('h6', 'Nyu-York xot-dog', 30000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h6" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h6', 'Nyu-York xot-dog', 30000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h6">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h6', 'Nyu-York xot-dog', 30000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h7" onclick="openDetail('h7')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Mehiko xot-dog">
-        </div>
-        <div class="product-name">Mehiko xot-dog</div>
-        <div class="product-desc">250 g — Meksikacha o'tkir ta'mli xot-dog</div>
-        <div class="product-bottom">
-          <div class="product-price">30,000 so'm</div>
-          <button class="add-btn" id="btn-h7" onclick="event.stopPropagation(); changeQuantity('h7', 'Mehiko xot-dog', 30000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h7" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h7', 'Mehiko xot-dog', 30000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h7">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h7', 'Mehiko xot-dog', 30000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h8" onclick="openDetail('h8')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Bolalar xot-dogi">
-        </div>
-        <div class="product-name">Bolalar xot-dogi</div>
-        <div class="product-desc">180 g — Kichik bolajonlar uchun mos</div>
-        <div class="product-bottom">
-          <div class="product-price">22,000 so'm</div>
-          <button class="add-btn" id="btn-h8" onclick="event.stopPropagation(); changeQuantity('h8', 'Bolalar xot-dogi', 22000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h8" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h8', 'Bolalar xot-dogi', 22000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h8">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h8', 'Bolalar xot-dogi', 22000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h9" onclick="openDetail('h9')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Achchiq xot-dog">
-        </div>
-        <div class="product-name">Achchiq xot-dog</div>
-        <div class="product-desc">230 g — O'tkir va achchiq souslar bilan</div>
-        <div class="product-bottom">
-          <div class="product-price">26,000 so'm</div>
-          <button class="add-btn" id="btn-h9" onclick="event.stopPropagation(); changeQuantity('h9', 'Achchiq xot-dog', 26000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h9" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h9', 'Achchiq xot-dog', 26000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h9">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h9', 'Achchiq xot-dog', 26000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h10" onclick="openDetail('h10')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80" alt="Premium xot-dog">
-        </div>
-        <div class="product-name">Premium xot-dog</div>
-        <div class="product-desc">350 g — Maxsus premium masalliqlar</div>
-        <div class="product-bottom">
-          <div class="product-price">44,000 so'm</div>
-          <button class="add-btn" id="btn-h10" onclick="event.stopPropagation(); changeQuantity('h10', 'Premium xot-dog', 44000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h10" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h10', 'Premium xot-dog', 44000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h10">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h10', 'Premium xot-dog', 44000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h11" onclick="openDetail('h11')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400&auto=format&fit=crop&q=80" alt="Rolyal fresh">
-        </div>
-        <div class="product-name">Rolyal fresh</div>
-        <div class="product-desc">320 g — Yangi sabzavotlar va go'sht</div>
-        <div class="product-bottom">
-          <div class="product-price">38,000 so'm</div>
-          <button class="add-btn" id="btn-h11" onclick="event.stopPropagation(); changeQuantity('h11', 'Rolyal fresh', 38000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h11" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h11', 'Rolyal fresh', 38000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h11">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h11', 'Rolyal fresh', 38000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h12" onclick="openDetail('h12')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&auto=format&fit=crop&q=80" alt="Italyancha sendvich">
-        </div>
-        <div class="product-name">Italyancha sendvich</div>
-        <div class="product-desc">250 g — Italiya ta'miga ega mazali sendvich</div>
-        <div class="product-bottom">
-          <div class="product-price">34,000 so'm</div>
-          <button class="add-btn" id="btn-h12" onclick="event.stopPropagation(); changeQuantity('h12', 'Italyancha sendvich', 34000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h12" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h12', 'Italyancha sendvich', 34000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h12">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h12', 'Italyancha sendvich', 34000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h13" onclick="openDetail('h13')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&auto=format&fit=crop&q=80" alt="Sendvich">
-        </div>
-        <div class="product-name">Sendvich</div>
-        <div class="product-desc">300 g — Klassik toster sendvich</div>
-        <div class="product-bottom">
-          <div class="product-price">34,000 so'm</div>
-          <button class="add-btn" id="btn-h13" onclick="event.stopPropagation(); changeQuantity('h13', 'Sendvich', 34000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h13" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h13', 'Sendvich', 34000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h13">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h13', 'Sendvich', 34000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h14" onclick="openDetail('h14')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80" alt="Mitboks">
-        </div>
-        <div class="product-name">Mitboks</div>
-        <div class="product-desc">350 g — Go'shtli va kartoshkali boks</div>
-        <div class="product-bottom">
-          <div class="product-price">54,000 so'm</div>
-          <button class="add-btn" id="btn-h14" onclick="event.stopPropagation(); changeQuantity('h14', 'Mitboks', 54000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h14" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h14', 'Mitboks', 54000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h14">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h14', 'Mitboks', 54000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="hotdog" id="card-h15" onclick="openDetail('h15')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80" alt="Stripboks">
-        </div>
-        <div class="product-name">Stripboks</div>
-        <div class="product-desc">350 g — Qarsillama stripslar va fri</div>
-        <div class="product-bottom">
-          <div class="product-price">52,000 so'm</div>
-          <button class="add-btn" id="btn-h15" onclick="event.stopPropagation(); changeQuantity('h15', 'Stripboks', 52000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-h15" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('h15', 'Stripboks', 52000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-h15">0</span>
-            <button class="qty-btn" onclick="changeQuantity('h15', 'Stripboks', 52000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- GARNIRLAR -->
-      <div class="product-card" data-category="garnir" id="card-g1" onclick="openDetail('g1')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&auto=format&fit=crop&q=80" alt="Pishloqli yostiqchalar">
-        </div>
-        <div class="product-name">Pishloqli yostiqchalar</div>
-        <div class="product-desc">300 g — Erigan pishloqli shariklar</div>
-        <div class="product-bottom">
-          <div class="product-price">34,000 so'm</div>
-          <button class="add-btn" id="btn-g1" onclick="event.stopPropagation(); changeQuantity('g1', 'Pishloqli yostiqchalar', 34000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-g1" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('g1', 'Pishloqli yostiqchalar', 34000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-g1">0</span>
-            <button class="qty-btn" onclick="changeQuantity('g1', 'Pishloqli yostiqchalar', 34000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="garnir" id="card-g2" onclick="openDetail('g2')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1576107232684-1279f3908594?w=400&auto=format&fit=crop&q=80" alt="Tryufelli fri">
-        </div>
-        <div class="product-name">Tryufelli fri</div>
-        <div class="product-desc">180 g — Tryufel yog'i va ziravorlar bilan</div>
-        <div class="product-bottom">
-          <div class="product-price">30,000 so'm</div>
-          <button class="add-btn" id="btn-g2" onclick="event.stopPropagation(); changeQuantity('g2', 'Tryufelli fri', 30000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-g2" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('g2', 'Tryufelli fri', 30000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-g2">0</span>
-            <button class="qty-btn" onclick="changeQuantity('g2', 'Tryufelli fri', 30000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="garnir" id="card-g3" onclick="openDetail('g3')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1576107232684-1279f3908594?w=400&auto=format&fit=crop&q=80" alt="Kartoshka fri">
-        </div>
-        <div class="product-name">Kartoshka fri</div>
-        <div class="product-desc">180 g — Qarsillama oltinrang fri</div>
-        <div class="product-bottom">
-          <div class="product-price">22,000 so'm</div>
-          <button class="add-btn" id="btn-g3" onclick="event.stopPropagation(); changeQuantity('g3', 'Kartoshka fri', 22000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-g3" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('g3', 'Kartoshka fri', 22000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-g3">0</span>
-            <button class="qty-btn" onclick="changeQuantity('g3', 'Kartoshka fri', 22000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="garnir" id="card-g4" onclick="openDetail('g4')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=400&auto=format&fit=crop&q=80" alt="Aynaho kartoshka">
-        </div>
-        <div class="product-name">Aynaho kartoshka</div>
-        <div class="product-desc">210 g — Qishloqcha uslubda qovurilgan kartoshka</div>
-        <div class="product-bottom">
-          <div class="product-price">26,000 so'm</div>
-          <button class="add-btn" id="btn-g4" onclick="event.stopPropagation(); changeQuantity('g4', 'Aynaho kartoshka', 26000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-g4" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('g4', 'Aynaho kartoshka', 26000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-g4">0</span>
-            <button class="qty-btn" onclick="changeQuantity('g4', 'Aynaho kartoshka', 26000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ICHIMLIKLAR (SAQLANIB QOLGAN) -->
-      <div class="product-card" data-category="drink" id="card-p3" onclick="openDetail('p3')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80" alt="Coca-Cola 0.5L">
-        </div>
-        <div class="product-name">Coca-Cola 0.5L</div>
-        <div class="product-desc">Salqinlashtiruvchi gazlangan ichimlik</div>
-        <div class="product-bottom">
-          <div class="product-price">8,000 so'm</div>
-          <button class="add-btn" id="btn-p3" onclick="event.stopPropagation(); changeQuantity('p3', 'Coca-Cola 0.5L', 8000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-p3" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('p3', 'Coca-Cola 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-p3">0</span>
-            <button class="qty-btn" onclick="changeQuantity('p3', 'Coca-Cola 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="drink" id="card-p4" onclick="openDetail('p4')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=400&auto=format&fit=crop&q=80" alt="Fanta 0.5L">
-        </div>
-        <div class="product-name">Fanta 0.5L</div>
-        <div class="product-desc">Meva ta'mli salqinlashtiruvchi ichimlik</div>
-        <div class="product-bottom">
-          <div class="product-price">8,000 so'm</div>
-          <button class="add-btn" id="btn-p4" onclick="event.stopPropagation(); changeQuantity('p4', 'Fanta 0.5L', 8000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-p4" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('p4', 'Fanta 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-p4">0</span>
-            <button class="qty-btn" onclick="changeQuantity('p4', 'Fanta 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card" data-category="drink" id="card-p5" onclick="openDetail('p5')">
-        <div class="product-img-box">
-          <img class="product-img" src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80" alt="Sprite 0.5L">
-        </div>
-        <div class="product-name">Sprite 0.5L</div>
-        <div class="product-desc">Limon va laym ta'mli muzdek ichimlik</div>
-        <div class="product-bottom">
-          <div class="product-price">8,000 so'm</div>
-          <button class="add-btn" id="btn-p5" onclick="event.stopPropagation(); changeQuantity('p5', 'Sprite 0.5L', 8000, 1)">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <div class="quantity-control" id="ctrl-p5" onclick="event.stopPropagation();">
-            <button class="qty-btn" onclick="changeQuantity('p5', 'Sprite 0.5L', 8000, -1)"><i class="fa-solid fa-minus"></i></button>
-            <span class="qty-count" id="count-p5">0</span>
-            <button class="qty-btn" onclick="changeQuantity('p5', 'Sprite 0.5L', 8000, 1)"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </div>
-
+    <div class="product-grid" id="productGrid">
+      <!-- Dinamik yuklanadi -->
     </div>
   </div>
 
@@ -1397,10 +815,6 @@
           <span><i class="fa-solid fa-phone" style="color:#ff7a00; margin-right:8px;"></i> Aloqa</span>
           <span>+998 90 123 45 67</span>
         </div>
-        <div class="profile-menu-item">
-          <span><i class="fa-solid fa-shield-halved" style="color:#ff7a00; margin-right:8px;"></i> Ilova versiyasi</span>
-          <span>v2.2.0</span>
-        </div>
       </div>
     </div>
   </div>
@@ -1414,7 +828,7 @@
     <button class="order-btn" onclick="openCheckoutModal()">Buyurtma berish <i class="fa-solid fa-arrow-right"></i></button>
   </div>
 
-  <!-- Bottom Navigation Bar -->
+  <!-- Bottom Nav -->
   <div class="bottom-nav">
     <div class="nav-item active" id="nav-home" onclick="switchTab('home', this)">
       <i class="fa-solid fa-utensils"></i>
@@ -1430,7 +844,7 @@
     </div>
   </div>
 
-  <!-- Product Detail Modal -->
+  <!-- Detail Modal -->
   <div class="detail-modal" id="detailModal">
     <div class="detail-header">
       <div class="icon-btn" onclick="closeDetail()"><i class="fa-solid fa-chevron-left"></i></div>
@@ -1443,27 +857,10 @@
 
     <div class="detail-content">
       <div class="detail-title-row">
-        <div class="detail-title" id="mTitle">Hot-Dog</div>
+        <div class="detail-title" id="mTitle">Xot-Dog</div>
         <div class="detail-price" id="mPrice">0 so'm</div>
       </div>
       <p class="detail-desc" id="mDesc">Mazzali va yangi uzilgan masalliqlardan tayyorlangan maxsus taom.</p>
-
-      <div class="option-title">O'lcham (Size)</div>
-      <div class="size-opts">
-        <div class="size-btn" onclick="selectSize(this)">Regular</div>
-        <div class="size-btn active" onclick="selectSize(this)">Large</div>
-        <div class="size-btn" onclick="selectSize(this)">X-Large</div>
-      </div>
-
-      <div class="option-title">Qo'shimchalar</div>
-      <div class="switch-row">
-        <span>Qo'shimcha Pishloq</span>
-        <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
-      </div>
-      <div class="switch-row">
-        <span>Maxsus Sous</span>
-        <label class="switch"><input type="checkbox"><span class="slider"></span></label>
-      </div>
 
       <div class="detail-footer">
         <div class="qty-picker">
@@ -1527,12 +924,11 @@
         </div>
       </div>
 
-      <button class="submit-order-btn" onclick="confirmOrder()">Tasdiqlash va Yuborish</button>
+      <button class="submit-order-btn" id="submitOrderBtn" onclick="confirmOrder()">Tasdiqlash va Yuborish</button>
     </div>
   </div>
 
   <script>
-    // Telegram WebApp sozlamalari
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
@@ -1545,45 +941,70 @@
     }
 
     const products = {
+      // XOT-DOGLAR
+      h1_25: { id: 'h1_25', category: 'hotdog', name: 'Achchiq xot-dog', price: 25000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Achchiq sous, sosiska va maxsus salat.' },
+      h1_35: { id: 'h1_35', category: 'hotdog', name: 'Achchiq xot-dog', price: 35000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Kattalashtirilgan achchiq xot-dog.' },
+      
+      h2_30: { id: 'h2_30', category: 'hotdog', name: 'Chikago xot-dog', price: 30000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Chikago uslubidagi mazali xot-dog.' },
+      h2_45: { id: 'h2_45', category: 'hotdog', name: 'Chikago xot-dog', price: 45000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Katta portsiya Chikago xot-dog.' },
+
+      h3_50: { id: 'h3_50', category: 'hotdog', name: 'Amerikancha xot-dog', price: 50000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Katta o‘lchamdagi amerikancha xot-dog.' },
+      h4_30: { id: 'h4_30', category: 'hotdog', name: 'Nyu-York xot-dog', price: 30000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Nyu-York uslubidagi hot-dog.' },
+
+      h5_30: { id: 'h5_30', category: 'hotdog', name: 'Mehiko xot-dog', price: 30000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Meksikacha o‘tkir ta’mli xot-dog.' },
+      h5_45: { id: 'h5_45', category: 'hotdog', name: 'Mehiko xot-dog', price: 45000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Katta portsiya Mehiko xot-dog.' },
+
+      h6_35: { id: 'h6_35', category: 'hotdog', name: 'Klassik xot-dog', price: 35000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'An’anaviy klassik xot-dog.' },
+      
+      h7_30: { id: 'h7_30', category: 'hotdog', name: 'Chikken xot-dog', price: 30000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Tovuqli sosiska va maxsus sous.' },
+      h7_40: { id: 'h7_40', category: 'hotdog', name: 'Chikken xot-dog', price: 40000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Katta portsiya tovuqli xot-dog.' },
+      
+      h8_25: { id: 'h8_25', category: 'hotdog', name: 'Fransuzcha xot-dog', price: 25000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Qarsillama kulcha va sosiska.' },
+      h9_30: { id: 'h9_30', category: 'hotdog', name: 'Premium xot-dog', price: 30000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Maxsus premium masalliqlar.' },
+      h10_20: { id: 'h10_20', category: 'hotdog', name: 'Bolalar xot-dogi', price: 20000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: 'Kichik bolajonlar uchun mos.' },
+      h11_40: { id: 'h11_40', category: 'hotdog', name: 'Royol Fresh', price: 40000, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400&auto=format&fit=crop&q=80', desc: 'Yangi sabzavotlar va go‘sht.' },
+      h12_35: { id: 'h12_35', category: 'hotdog', name: 'Sendvich', price: 35000, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&auto=format&fit=crop&q=80', desc: 'Klassik toster sendvich.' },
+      h13_35: { id: 'h13_35', category: 'hotdog', name: 'Italyancha sendvich', price: 35000, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&auto=format&fit=crop&q=80', desc: 'Italiya ta’miga ega sendvich.' },
+
       // BURGERLAR
-      b1: { id: 'b1', name: 'Chikken burger', price: 42000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: '350 g — Mazali tovuqli burger.' },
-      b2: { id: 'b2', name: 'Steyk burger', price: 66000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80', desc: '450 g — Sharbatli steyk go\'shti va pishloq.' },
-      b3: { id: 'b3', name: 'Strit burger', price: 58000, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80', desc: '400 g — Maxsus strit uslubidagi burger.' },
-      b4: { id: 'b4', name: 'Chizburger', price: 38000, img: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=400&auto=format&fit=crop&q=80', desc: '330 g — Klassik pishloqli burger.' },
-      b5: { id: 'b5', name: 'Tryufelli burger', price: 58000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80', desc: '400 g — Maxsus tryufel sousi bilan.' },
-      b6: { id: 'b6', name: 'Klassik burger', price: 58000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: '400 g — An\'anaviy va mazali burger.' },
-      b7: { id: 'b7', name: 'Achchiq burger', price: 58000, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80', desc: '400 g — Achchiq qalampir va maxsus sous.' },
+      b1_65: { id: 'b1_65', category: 'burger', name: 'Strit burger', price: 65000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Maxsus strit uslubidagi burger.' },
+      b1_80: { id: 'b1_80', category: 'burger', name: 'Strit burger', price: 80000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Katta portsiya strit burger.' },
+      b1_95: { id: 'b1_95', category: 'burger', name: 'Strit burger', price: 95000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Mega portsiya strit burger.' },
 
-      // HOT-DOG VA FASTFUDLAR
-      h1: { id: 'h1', name: 'Chikago xot-dog', price: 30000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '250 g — Chikago uslubidagi xot-dog.' },
-      h2: { id: 'h2', name: 'Fransuzcha xot-dog', price: 26000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '180 g — Qarsillama kulcha va sosiska.' },
-      h3: { id: 'h3', name: 'Chikken xot-dog', price: 30000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '250 g — Tovuqli sosiska va sous.' },
-      h4: { id: 'h4', name: 'Amerikancha xot-dog', price: 46000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '380 g — Katta o\'lchamdagi amerikancha xot-dog.' },
-      h5: { id: 'h5', name: 'Klassik xot-dog', price: 34000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '250 g — An\'anaviy klassik xot-dog.' },
-      h6: { id: 'h6', name: 'Nyu-York xot-dog', price: 30000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '250 g — Nyu-York uslubidagi hot-dog.' },
-      h7: { id: 'h7', name: 'Mehiko xot-dog', price: 30000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '250 g — Meksikacha o\'tkir ta\'mli xot-dog.' },
-      h8: { id: 'h8', name: 'Bolalar xot-dogi', price: 22000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '180 g — Kichik bolajonlar uchun mos.' },
-      h9: { id: 'h9', name: 'Achchiq xot-dog', price: 26000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '230 g — O\'tkir va achchiq souslar bilan.' },
-      h10: { id: 'h10', name: 'Premium xot-dog', price: 44000, img: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80', desc: '350 g — Maxsus premium masalliqlar.' },
-      h11: { id: 'h11', name: 'Rolyal fresh', price: 38000, img: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400&auto=format&fit=crop&q=80', desc: '320 g — Yangi sabzavotlar va go\'sht.' },
-      h12: { id: 'h12', name: 'Italyancha sendvich', price: 34000, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&auto=format&fit=crop&q=80', desc: '250 g — Italiya ta\'miga ega mazali sendvich.' },
-      h13: { id: 'h13', name: 'Sendvich', price: 34000, img: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&auto=format&fit=crop&q=80', desc: '300 g — Klassik toster sendvich.' },
-      h14: { id: 'h14', name: 'Mitboks', price: 54000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80', desc: '350 g — Go\'shtli va kartoshkali boks.' },
-      h15: { id: 'h15', name: 'Stripboks', price: 52000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80', desc: '350 g — Qarsillama stripslar va fri.' },
+      b2_65: { id: 'b2_65', category: 'burger', name: 'Klassik burger', price: 65000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'An’anaviy va mazali burger.' },
+      b2_80: { id: 'b2_80', category: 'burger', name: 'Klassik burger', price: 80000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Katta portsiya klassik burger.' },
+      b2_95: { id: 'b2_95', category: 'burger', name: 'Klassik burger', price: 95000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Mega portsiya klassik burger.' },
 
-      // GARNIRLAR
-      g1: { id: 'g1', name: 'Pishloqli yostiqchalar', price: 34000, img: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&auto=format&fit=crop&q=80', desc: '300 g — Erigan pishloqli shariklar.' },
-      g2: { id: 'g2', name: 'Tryufelli fri', price: 30000, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=400&auto=format&fit=crop&q=80', desc: '180 g — Tryufel yog\'i va ziravorlar bilan.' },
-      g3: { id: 'g3', name: 'Kartoshka fri', price: 22000, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=400&auto=format&fit=crop&q=80', desc: '180 g — Qarsillama oltinrang fri.' },
-      g4: { id: 'g4', name: 'Aynaho kartoshka', price: 26000, img: 'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=400&auto=format&fit=crop&q=80', desc: '210 g — Qishloqcha uslubda qovurilgan kartoshka.' },
+      b3_65: { id: 'b3_65', category: 'burger', name: 'Tryufelli burger', price: 65000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80', desc: 'Maxsus tryufel sousi bilan.' },
+      b3_80: { id: 'b3_80', category: 'burger', name: 'Tryufelli burger', price: 80000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80', desc: 'Katta portsiya tryufelli burger.' },
+      b3_95: { id: 'b3_95', category: 'burger', name: 'Tryufelli burger', price: 95000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80', desc: 'Mega portsiya tryufelli burger.' },
 
-      // ICHIMLIKLAR
-      p3: { id: 'p3', name: 'Coca-Cola 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80', desc: 'Salqinlashtiruvchi gazlangan ichimlik.' },
-      p4: { id: 'p4', name: 'Fanta 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=400&auto=format&fit=crop&q=80', desc: 'Meva ta\'mli salqinlashtiruvchi ichimlik.' },
-      p5: { id: 'p5', name: 'Sprite 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', fallback: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', desc: 'Limon va laym ta\'mli muzdek ichimlik.' }
+      b4_65: { id: 'b4_65', category: 'burger', name: 'Achchiq burger', price: 65000, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80', desc: 'Achchiq qalampir va maxsus sous.' },
+      b4_80: { id: 'b4_80', category: 'burger', name: 'Achchiq burger', price: 80000, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80', desc: 'Katta portsiya achchiq burger.' },
+      b4_95: { id: 'b4_95', category: 'burger', name: 'Achchiq burger', price: 95000, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400&auto=format&fit=crop&q=80', desc: 'Mega portsiya achchiq burger.' },
+
+      b5_75: { id: 'b5_75', category: 'burger', name: 'Steyk burger', price: 75000, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&auto=format&fit=crop&q=80', desc: 'Sharbatli steyk go‘shti va pishloq.' },
+      b6_40: { id: 'b6_40', category: 'burger', name: 'Chizburger', price: 40000, img: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=400&auto=format&fit=crop&q=80', desc: 'Klassik pishloqli burger.' },
+      b7_45: { id: 'b7_45', category: 'burger', name: 'Chikken burger', price: 45000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Mazali tovuqli burger.' },
+
+      b8_65: { id: 'b8_65', category: 'burger', name: 'BBK burger', price: 65000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Maxsus BBK sousli burger.' },
+      b8_80: { id: 'b8_80', category: 'burger', name: 'BBK burger', price: 80000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Katta portsiya BBK burger.' },
+      b8_95: { id: 'b8_95', category: 'burger', name: 'BBK burger', price: 95000, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', desc: 'Mega portsiya BBK burger.' },
+
+      // GARNIRLAR & YANGI
+      g1_58: { id: 'g1_58', category: 'garnir', name: 'Strips boks', price: 58000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80', desc: 'Qarsillama stripslar va fri.' },
+      g2_60: { id: 'g2_60', category: 'garnir', name: 'Mitboks', price: 60000, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop&q=80', desc: 'Go‘shtli va kartoshkali boks.' },
+      g3_35: { id: 'g3_35', category: 'garnir', name: 'Pishloqli yostiqchalar', price: 35000, img: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&auto=format&fit=crop&q=80', desc: 'Erigan pishloqli shariklar.' },
+      g4_30: { id: 'g4_30', category: 'garnir', name: 'Tryufelli fri', price: 30000, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=400&auto=format&fit=crop&q=80', desc: 'Tryufel yog‘i va ziravorlar bilan.' },
+      g5_25: { id: 'g5_25', category: 'garnir', name: 'Aydaxo kartoshka', price: 25000, img: 'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=400&auto=format&fit=crop&q=80', desc: 'Qishloqcha uslubda qovurilgan kartoshka.' },
+      g6_20: { id: 'g6_20', category: 'garnir', name: 'Kartoshka fri', price: 20000, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=400&auto=format&fit=crop&q=80', desc: 'Qarsillama oltinrang fri.' },
+
+      // ICHIMLIKLAR (SUVLAR)
+      p3: { id: 'p3', category: 'drink', name: 'Coca-Cola 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80', desc: 'Salqinlashtiruvchi gazlangan ichimlik.' },
+      p4: { id: 'p4', category: 'drink', name: 'Fanta 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=400&auto=format&fit=crop&q=80', desc: 'Meva ta’mli salqinlashtiruvchi ichimlik.' },
+      p5: { id: 'p5', category: 'drink', name: 'Sprite 0.5L', price: 8000, img: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400&auto=format&fit=crop&q=80', desc: 'Limon va laym ta’mli muzdek ichimlik.' }
     };
 
-    // LOCALSTORAGE'DAN MA'LUMOTLARNI YUKLASH
     let cart = JSON.parse(localStorage.getItem('street_dog_cart')) || {};
     let myOrders = JSON.parse(localStorage.getItem('street_dog_orders')) || [];
     let selectedDelivery = 'delivery'; 
@@ -1591,13 +1012,42 @@
     let selectedDetailId = null;
     let modalQty = 1;
     let userLocation = null;
+    let isSubmitting = false;
 
-    // SAHIFA YUKLANGANDA ESKI SESHANBA/SAVAT VA BUYURTMALARNI TIKLASH
     window.addEventListener('DOMContentLoaded', () => {
+      renderProducts();
       Object.keys(cart).forEach(id => updateProductUI(id));
       updateCartBar();
       renderAllOrders();
     });
+
+    function renderProducts() {
+      const grid = document.getElementById('productGrid');
+      let html = '';
+      Object.values(products).forEach(item => {
+        html += `
+          <div class="product-card" data-category="${item.category}" id="card-${item.id}" onclick="openDetail('${item.id}')">
+            <div class="product-img-box">
+              <img class="product-img" src="${item.img}" alt="${item.name}">
+            </div>
+            <div class="product-name">${item.name}</div>
+            <div class="product-desc">${item.desc}</div>
+            <div class="product-bottom">
+              <div class="product-price">${item.price.toLocaleString()} so'm</div>
+              <button class="add-btn" id="btn-${item.id}" onclick="event.stopPropagation(); changeQuantity('${item.id}', '${item.name}', ${item.price}, 1)">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+              <div class="quantity-control" id="ctrl-${item.id}" onclick="event.stopPropagation();">
+                <button class="qty-btn" onclick="changeQuantity('${item.id}', '${item.name}', ${item.price}, -1)"><i class="fa-solid fa-minus"></i></button>
+                <span class="qty-count" id="count-${item.id}">0</span>
+                <button class="qty-btn" onclick="changeQuantity('${item.id}', '${item.name}', ${item.price}, 1)"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      grid.innerHTML = html;
+    }
 
     function saveCartToStorage() {
       localStorage.setItem('street_dog_cart', JSON.stringify(cart));
@@ -1624,6 +1074,7 @@
       selectedDetailId = id;
       modalQty = 1;
       const item = products[id];
+      if(!item) return;
 
       document.getElementById('mTitle').innerText = item.name;
       document.getElementById('mPrice').innerText = item.price.toLocaleString() + " so'm";
@@ -1632,7 +1083,6 @@
 
       const imgEl = document.getElementById('mImg');
       imgEl.src = item.img;
-      imgEl.onerror = () => { imgEl.src = item.fallback; };
 
       document.getElementById('detailModal').classList.add('active');
     }
@@ -1648,14 +1098,11 @@
       }
     }
 
-    function selectSize(btn) {
-      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    }
-
     function addToCartFromModal() {
       const item = products[selectedDetailId];
-      changeQuantity(selectedDetailId, item.name, item.price, modalQty);
+      if (item) {
+        changeQuantity(selectedDetailId, item.name, item.price, modalQty);
+      }
       closeDetail();
     }
 
@@ -1765,7 +1212,6 @@
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
             userLocation = { latitude, longitude };
-            
             document.getElementById('addressInput').value = `Geolokatsiya aniqlandi (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
             alert("Joylashuvingiz muvaffaqiyatli aniqlandi!");
           },
@@ -1779,11 +1225,14 @@
     }
 
     function confirmOrder() {
+      if (isSubmitting) return;
+
       const BOT_TOKEN = "8983485871:AAFzezqjvtLgNDQ-LfIxSsMMttbdZMiFK0M";
       const ADMIN_ID = "6069854654";
 
       const phone = document.getElementById('phoneInput').value.trim();
       const address = document.getElementById('addressInput').value.trim();
+      const submitBtn = document.getElementById('submitOrderBtn');
 
       if (!phone) {
         alert("Iltimos, telefon raqamingizni kiriting!");
@@ -1794,6 +1243,10 @@
         alert("Iltimos, yetkazib berish manzilini kiriting!");
         return;
       }
+
+      isSubmitting = true;
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Yuborilmoqda...";
 
       const itemsList = Object.values(cart);
       let totalPrice = 0;
@@ -1835,18 +1288,6 @@
       .then(res => res.json())
       .then(data => {
         if (data.ok) {
-          if (userLocation && selectedDelivery === 'delivery') {
-            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chat_id: ADMIN_ID,
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude
-              })
-            }).catch(e => console.error(e));
-          }
-
           const newOrder = {
             id: '#' + Math.floor(1000 + Math.random() * 9000),
             date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
@@ -1854,12 +1295,10 @@
             items: itemsList
           };
 
-          // BUYURTMANI SAQLASH
           myOrders.unshift(newOrder);
           saveOrdersToStorage();
           renderAllOrders();
 
-          // SAVATCHANI TOZALASH
           cart = {};
           saveCartToStorage();
           Object.keys(products).forEach(id => updateProductUI(id));
@@ -1874,6 +1313,11 @@
       .catch(err => {
         console.error(err);
         alert("Tarmoqda xatolik yuz berdi!");
+      })
+      .finally(() => {
+        isSubmitting = false;
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Tasdiqlash va Yuborish";
       });
     }
 
@@ -1896,12 +1340,11 @@
         order.items.forEach(item => {
           const prodInfo = products[item.id] || {};
           const imgSrc = prodInfo.img || 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80';
-          const fallbackSrc = prodInfo.fallback || 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?w=400&auto=format&fit=crop&q=80';
 
           itemsHtml += `
             <li>
               <div class="order-item-left">
-                <img class="order-item-img" src="${imgSrc}" onerror="this.src='${fallbackSrc}'" alt="${item.name}">
+                <img class="order-item-img" src="${imgSrc}" alt="${item.name}">
                 <div class="order-item-info">
                   <span class="order-item-title">${item.name}</span>
                   <span class="order-item-qty">${item.count} ta</span>
