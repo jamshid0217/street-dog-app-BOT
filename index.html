@@ -31,7 +31,7 @@
       background-attachment: scroll;
       color: #ffffff;
       padding: 16px;
-      padding-bottom: 150px;
+      padding-bottom: 170px; /* Savat paneli ostida taomlar yashirinib qolmasligi uchun kattalashtirildi */
       min-height: 100vh;
       position: relative;
     }
@@ -273,7 +273,7 @@
 
     .cart-bar {
       position: fixed;
-      bottom: 75px;
+      bottom: 75px; /* Menyudan pastroqqa va navigatsiya panelidan teparoqqa joylashtirildi */
       left: 16px;
       right: 16px;
       background: #18181f;
@@ -1264,25 +1264,24 @@
 
       let mapsUrl = "";
       if (userLocation) {
-        mapsUrl = `\n🗺 **Xaritada ko'rish:** https://maps.google.com/?q=${userLocation.latitude},${userLocation.longitude}`;
+        mapsUrl = `\n🗺 Xaritada ko'rish: https://maps.google.com/?q=${userLocation.latitude},${userLocation.longitude}`;
       }
 
-      const adminMessage = `🛒 **YANGI BUYURTMA!**\n\n` +
-                           `👤 **Mijoz:** ${userNickname}\n` +
-                           `📞 **Tel:** ${phone}\n` +
-                           `🚚 **Turi:** ${deliveryTypeStr}\n` +
-                           `📍 **Manzil:** ${addressStr}${mapsUrl}\n` +
-                           `💳 **To'lov:** ${selectedPayment}\n\n` +
-                           `📦 **Buyurtma tarkibi:**\n${itemDetails}\n` +
-                           `💵 **Jami summa:** ${totalPrice.toLocaleString()} so'm`;
+      const adminMessage = `🛒 YANGI BUYURTMA!\n\n` +
+                           `👤 Mijoz: ${userNickname}\n` +
+                           `📞 Tel: ${phone}\n` +
+                           `🚚 Turi: ${deliveryTypeStr}\n` +
+                           `📍 Manzil: ${addressStr}${mapsUrl}\n` +
+                           `💳 To'lov: ${selectedPayment}\n\n` +
+                           `📦 Buyurtma tarkibi:\n${itemDetails}\n` +
+                           `💵 Jami summa: ${totalPrice.toLocaleString()} so'm`;
 
       fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: ADMIN_ID,
-          text: adminMessage,
-          parse_mode: 'Markdown'
+          text: adminMessage
         })
       })
       .then(res => res.json())
