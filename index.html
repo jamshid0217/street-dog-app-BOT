@@ -970,8 +970,24 @@
     tg.expand();
 
     // ==== SERVER MANZILI ====
-    // Ilovani bot serverining o'zi beradi, shuning uchun bu yerni O'ZGARTIRMANG (bo'sh qolsin).
-    const API_URL = "";
+    // Sayt GitHub Pages'da turganda bot server manzilini havoladagi ?api=... orqali beradi
+    // (bot ishga tushganda "Open App" tugmasiga o'zi qo'yadi). Faqat trycloudflare.com qabul qilinadi.
+    // Sayt botning o'zidan ochilsa, bu bo'sh qoladi va o'sha serverning o'ziga murojaat qilinadi.
+    const API_URL = (function () {
+      const ok = (u) => /^https:\/\/[a-z0-9-]+\.trycloudflare\.com\/?$/i.test(u || '');
+      let fromUrl = '';
+      try { fromUrl = (new URLSearchParams(location.search).get('api') || '').trim(); } catch (e) {}
+      if (ok(fromUrl)) {
+        try { localStorage.setItem('sd_api_url', fromUrl); } catch (e) {}
+        return fromUrl;
+      }
+      try {
+        const saved = localStorage.getItem('sd_api_url') || '';
+        if (ok(saved)) return saved;
+      } catch (e) {}
+      return "";
+    })();
+    let serverOffline = false;
 
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
       const user = tg.initDataUnsafe.user;
@@ -1351,15 +1367,21 @@
         shopClosed = !data.open;
         shopMessage = data.message || '';
         stopList = new Set(Array.isArray(data.stoplist) ? data.stoplist : []);
+        serverOffline = false;
         applyShopStatus();
       } catch (e) {
-        // Server vaqtincha javob bermasa, ilova odatdagidek ishlayveradi
+        // Server javob bermasa, menyu ochiq qoladi, lekin buyurtma berib bo'lmasligini ko'rsatamiz
+        serverOffline = true;
+        applyShopStatus();
       }
     }
 
     function applyShopStatus() {
       const banner = document.getElementById('closedBanner');
-      if (shopClosed) {
+      if (serverOffline) {
+        banner.innerText = "⚠️ Hozir buyurtma qabul qilish ishlamayapti. Menyuni ko'rishingiz mumkin, buyurtma berish uchun keyinroq urinib ko'ring.";
+        banner.style.display = 'block';
+      } else if (shopClosed) {
         banner.innerText = '⛔ ' + (shopMessage || "Hozir buyurtma qabul qilinmaydi. Iltimos, keyinroq urinib ko'ring.");
         banner.style.display = 'block';
       } else {
