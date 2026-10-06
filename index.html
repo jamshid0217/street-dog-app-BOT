@@ -970,9 +970,8 @@
     tg.expand();
 
     // ==== SERVER MANZILI ====
-    // bot.py ishlayotgan serverning HTTPS manzilini shu yerga yozing (oxirida "/" siz).
-    // Masalan: "https://street-dog.example.com" yoki Cloudflare Tunnel bergan manzil.
-    const API_URL = "https://jamshid0217.github.io/street-dog-app/";
+    // Ilovani bot serverining o'zi beradi, shuning uchun bu yerni O'ZGARTIRMANG (bo'sh qolsin).
+    const API_URL = "";
 
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
       const user = tg.initDataUnsafe.user;
@@ -1312,7 +1311,7 @@
 
     // ==================== SERVER (BOT) BILAN ALOQA ====================
     function apiConfigured() {
-      return typeof API_URL === 'string' && API_URL.startsWith('http') && !API_URL.includes('SHU_YERGA');
+      return true;
     }
 
     async function apiRequest(path, method, body) {
@@ -1320,7 +1319,7 @@
       const timer = setTimeout(() => controller.abort(), 20000);
       let res;
       try {
-        res = await fetch(API_URL.replace(/\/+$/, '') + path, {
+        res = await fetch((API_URL || window.location.origin).replace(/\/+$/, '') + path, {
           method: method,
           headers: body ? { 'Content-Type': 'application/json' } : undefined,
           body: body ? JSON.stringify(body) : undefined,
