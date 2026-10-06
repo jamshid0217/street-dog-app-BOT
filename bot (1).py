@@ -22,10 +22,13 @@ import math
 import os
 import re
 import shutil
+import socket
 import sqlite3
 import subprocess
+import textwrap
 import threading
 import time
+import unicodedata
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -127,6 +130,20 @@ CAFE_ADDRESS = 'Urganch shahri'
 WORK_HOURS = '10:00 - 23:00'
 CAFE_LAT = None  # kafe lokatsiyasi (ixtiyoriy)
 CAFE_LON = None
+
+# ---- CHEK PRINTER (XPrinter va boshqa termoprinterlar) ----
+PRINTER_ENABLED = True  # yangi buyurtma kelganda chek avtomatik chiqadi. O'chirish: False
+PRINTER_NAME = ""       # Windows'dagi printer nomi. Bo'sh qoldirsangiz — Windows'ning standart printeri
+PRINTER_IP = ""         # LAN/Wi-Fi printer bo'lsa uning IP si, masalan "192.168.1.50" (USB bo'lsa bo'sh)
+PRINTER_PORT = 9100
+PRINTER_WIDTH = 48      # 80 mm qog'oz = 48, 58 mm qog'oz = 32
+CAFE_NAME = "STREET DOG"
+
+# ---- SMENA HISOBOTI ----
+COMMISSION_PERCENT = 5          # savdodan sizning ulushingiz (foiz)
+SMENA_HISOBOT_VAQTI = "23:00"   # hisobot har kuni shu vaqtda o'zi yuboriladi (SS:DD)
+HISOBOT_IDS = []                # hisobot kimga borsin (Telegram ID). Bo'sh bo'lsa — ADMIN_IDS ga
+REPORT_IDS = HISOBOT_IDS or ADMIN_IDS
 
 # Ilova manzili ODATDA bo'sh qoladi: bot internetga chiqish manzilini (cloudflared)
 # o'zi topadi va "Open App" tugmasiga o'zi qo'yadi. Faqat doimiy hosting/domeningiz
@@ -231,7 +248,11 @@ ADMIN_HELP = (
     "/yopish [izoh] — buyurtma qabul qilishni to'xtatish\n"
     "/stop — stop-list (tugagan taomlarni o'chirish/yoqish)\n"
     "/stats — statistika\n"
-    "/broadcast matn — barcha mijozlarga xabar yuborish"
+    "/broadcast matn — barcha mijozlarga xabar yuborish\n"
+    "/chek [raqam] — chekni qayta chiqarish (raqamsiz — sinov cheki)\n"
+    "/raqam [N] — kafedagi oxirgi buyurtma raqamini belgilash\n"
+    "/hisobot — joriy smena hisoboti\n"
+    "/smena — smenani yopish va hisobotni yuborish"
 )
 
 
@@ -335,6 +356,10 @@ def init_db() -> None:
         );
         """
     )
+    try:  # eski bazalar uchun: kunlik buyurtma raqami ustuni
+        db().execute("ALTER TABLE orders ADD COLUMN day_no INTEGER")
+    except sqlite3.OperationalError:
+        pass
 
 
 # ---- sozlamalar (ochiq/yopiq) ----
@@ -407,10 +432,11 @@ def create_order(user: dict, client_id, phone, delivery, address, lat, lon, paym
         if row:
             return row["id"], row["total"], False
     now = int(time.time())
+    day_no = next_order_no(now)  # hisoblash va yozish orasida await yo'q — raqamlar takrorlanmaydi
     cur = conn.execute(
         "INSERT INTO orders (client_id, user_id, username, full_name, phone, delivery_type, "
-        "address, lat, lon, payment, items_json, total, status, created_at, updated_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)",
+        "address, lat, lon, payment, items_json, total, status, created_at, updated_at, day_no) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)",
         (
             client_id,
             uid,
@@ -426,6 +452,7 @@ def create_order(user: dict, client_id, phone, delivery, address, lat, lon, paym
             total,
             now,
             now,
+            day_no,
         ),
     )
     return cur.lastrowid, total, True
@@ -451,6 +478,61 @@ def recent_order_count(user_id: int, seconds: int) -> int:
         "SELECT COUNT(*) AS n FROM orders WHERE user_id=? AND created_at>=?", (user_id, since)
     ).fetchone()
     return row["n"]
+
+
+# ---- kunlik buyurtma raqami (#1, #2, #3 ... har kuni 1 dan boshlanadi) ----
+def _day_bounds(ts: int):
+    d = datetime.fromtimestamp(ts, LOCAL_TZ)
+    day0 = d.replace(hour=0, minute=0, second=0, microsecond=0)
+    return day0, int(day0.timestamp()), int((day0 + timedelta(days=1)).timestamp())
+
+
+def _num_floor(date_str: str) -> int:
+    raw = get_setting("no_floor", "")
+    if "|" in raw:
+        d, n = raw.split("|", 1)
+        if d == date_str and n.lstrip("-").isdigit():
+            return int(n)
+    return 0
+
+
+def last_order_no_today(ts=None) -> int:
+    """Bugungi eng katta buyurtma raqami (kafe aytgan raqam ham hisobga olinadi)."""
+    ts = ts or int(time.time())
+    day0, start, end = _day_bounds(ts)
+    row = db().execute(
+        "SELECT MAX(COALESCE(day_no, 0)) AS m FROM orders WHERE created_at>=? AND created_at<?",
+        (start, end),
+    ).fetchone()
+    return max(row["m"] or 0, _num_floor(day0.strftime("%Y-%m-%d")))
+
+
+def next_order_no(ts=None) -> int:
+    return last_order_no_today(ts) + 1
+
+
+def set_last_order_no(n: int) -> int:
+    """Kafedagi hozirgi oxirgi buyurtma raqamini belgilaydi. Keyingi buyurtma raqamini qaytaradi."""
+    day0, _, _ = _day_bounds(int(time.time()))
+    set_setting("no_floor", f"{day0.strftime('%Y-%m-%d')}|{n}")
+    return next_order_no()
+
+
+def order_no(order) -> int:
+    """Mijoz, admin va chekda ko'rinadigan raqam."""
+    try:
+        value = order["day_no"]
+    except (IndexError, KeyError):
+        value = None
+    return value if value is not None else order["id"]
+
+
+def find_order_by_no(n: int):
+    _, start, end = _day_bounds(int(time.time()))
+    return db().execute(
+        "SELECT * FROM orders WHERE day_no=? AND created_at>=? AND created_at<? ORDER BY id DESC LIMIT 1",
+        (n, start, end),
+    ).fetchone()
 
 
 def save_msg(order_id: int, chat_id: int, message_id: int, kind: str) -> None:
@@ -592,7 +674,7 @@ def order_text(order) -> str:
     uname = f" (@{esc(order['username'])})" if order["username"] else ""
     customer = f'<a href="tg://user?id={order["user_id"]}">{esc(order["full_name"] or "Mijoz")}</a>{uname}'
     parts = [
-        f"🛒 <b>BUYURTMA #{order['id']}</b>",
+        f"🛒 <b>BUYURTMA #{order_no(order)}</b>",
         f"📌 Holat: <b>{esc(status_label(order))}</b>",
         "",
         f"👤 Mijoz: {customer}",
@@ -625,7 +707,7 @@ def receipt_text(order) -> str:
     is_delivery = order["delivery_type"] == "delivery"
     return "\n".join(
         [
-            f"✅ <b>Buyurtmangiz qabul qilindi! (#{order['id']})</b>",
+            f"✅ <b>Buyurtmangiz qabul qilindi! (#{order_no(order)})</b>",
             "",
             *lines,
             "",
@@ -672,7 +754,7 @@ def rating_keyboard(order_id: int) -> InlineKeyboardMarkup:
 
 
 def customer_status_text(order):
-    oid = order["id"]
+    oid = order_no(order)
     is_delivery = order["delivery_type"] == "delivery"
     status = order["status"]
     if status == "accepted":
@@ -722,7 +804,7 @@ async def notify_new_order(bot, order_id: int) -> None:
     receipt = await safe_send(bot, order["user_id"], receipt_text(order))
     if receipt is None:
         warn = (
-            f"⚠️ Buyurtma #{order_id}: mijozga bot xabar yubora olmadi "
+            f"⚠️ Buyurtma #{order_no(order)}: mijozga bot xabar yubora olmadi "
             f"(botni Start qilmagan bo'lishi mumkin). Telefon orqali bog'laning: {esc(order['phone'])}"
         )
         for admin_id in ADMIN_IDS:
@@ -751,6 +833,227 @@ async def notify_customer_status(bot, order) -> None:
             "Xizmatimizni baholang, bu biz uchun juda muhim: 👇",
             reply_markup=rating_keyboard(order["id"]),
         )
+
+
+# =====================================================================
+#  CHEK PRINTER (XPrinter va boshqa ESC/POS termoprinterlar)
+# =====================================================================
+ESC = b"\x1b"
+GS = b"\x1d"
+_print_lock = threading.Lock()
+
+_CYR = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "yo", "ж": "j",
+    "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o",
+    "п": "p", "р": "r", "с": "s", "т": "t", "у": "u", "ф": "f", "х": "x", "ц": "s",
+    "ч": "ch", "ш": "sh", "щ": "sh", "ъ": "'", "ы": "i", "ь": "", "э": "e", "ю": "yu",
+    "я": "ya", "ў": "o'", "қ": "q", "ғ": "g'", "ҳ": "h",
+}
+_APOS = set("ʻʼ‘’`´ʹ′")
+
+
+def to_ascii(text) -> str:
+    """Termoprinter odatda faqat lotin harflarini chiqaradi: kirill/emoji/maxsus belgilarni soddalashtiramiz."""
+    out = []
+    for ch in str(text if text is not None else ""):
+        low = ch.lower()
+        if ch in _APOS:
+            out.append("'")
+        elif low in _CYR:
+            t = _CYR[low]
+            out.append(t if ch == low else t.capitalize())
+        else:
+            out.append(unicodedata.normalize("NFKD", ch).encode("ascii", "ignore").decode("ascii"))
+    return "".join(c for c in "".join(out) if 32 <= ord(c) < 127)
+
+
+def _wrap(text: str, width: int) -> list:
+    return textwrap.wrap(to_ascii(text), max(width, 8)) or [""]
+
+
+def _lr(left: str, right: str, width: int) -> list:
+    """Chapda matn, o'ngda summa (uzun bo'lsa keyingi qatorga o'tadi)."""
+    right = to_ascii(right)
+    lines = _wrap(left, width - len(right) - 1)
+    lines[-1] = lines[-1].ljust(width - len(right)) + right
+    return lines
+
+
+class _Chek:
+    def __init__(self):
+        self.buf = bytearray(ESC + b"@")  # printerni tozalash
+
+    def align(self, n: int):  # 0 chap, 1 o'rta
+        self.buf += ESC + b"a" + bytes([n])
+
+    def bold(self, on: bool):
+        self.buf += ESC + b"E" + bytes([1 if on else 0])
+
+    def size(self, n: int):  # 0x00 oddiy, 0x11 ikki barobar
+        self.buf += GS + b"!" + bytes([n])
+
+    def line(self, text: str = ""):
+        self.buf += to_ascii(text).encode("ascii", "replace") + b"\n"
+
+    def finish(self) -> bytes:
+        self.buf += b"\n\n\n\n" + GS + b"V" + b"\x42\x00"  # surib, qirqish
+        return bytes(self.buf)
+
+
+def build_chek(order) -> bytes:
+    W = max(PRINTER_WIDTH, 20)
+    items = json.loads(order["items_json"])
+    is_delivery = order["delivery_type"] == "delivery"
+    c = _Chek()
+    c.align(1)
+    c.bold(True)
+    c.size(0x11)
+    c.line(CAFE_NAME)
+    c.size(0x00)
+    c.bold(False)
+    if CAFE_ADDRESS:
+        c.line(CAFE_ADDRESS)
+    if CONTACT_PHONE:
+        c.line(CONTACT_PHONE)
+    c.line("-" * W)
+    c.bold(True)
+    c.size(0x11)
+    c.line(f"BUYURTMA #{order_no(order)}")
+    c.size(0x00)
+    c.bold(False)
+    c.line(fmt_time(order["created_at"]))
+    c.line("-" * W)
+    c.align(0)
+    c.line("Turi: " + ("DOSTAVKA" if is_delivery else "OLIB KETISH"))
+    c.line("Mijoz: " + (order["full_name"] or "Mijoz"))
+    c.line("Tel: " + str(order["phone"]))
+    if is_delivery and order["address"]:
+        for ln in _wrap("Manzil: " + order["address"], W):
+            c.line(ln)
+    c.line("To'lov: " + str(order["payment"]))
+    c.line("-" * W)
+    for i in items:
+        for ln in _lr(f"{i['count']} x {i['name']}", fmt_money(i["price"] * i["count"]), W):
+            c.line(ln)
+    c.line("-" * W)
+    c.bold(True)
+    c.size(0x11)
+    for ln in _lr("JAMI:", fmt_money(order["total"]), W // 2):
+        c.line(ln)
+    c.size(0x00)
+    c.bold(False)
+    c.line("so'm")
+    c.line("-" * W)
+    c.align(1)
+    c.line("Rahmat! Yoqimli ishtaha!")
+    return c.finish()
+
+
+def build_test_chek() -> bytes:
+    W = max(PRINTER_WIDTH, 20)
+    c = _Chek()
+    c.align(1)
+    c.bold(True)
+    c.size(0x11)
+    c.line(CAFE_NAME)
+    c.size(0x00)
+    c.bold(False)
+    c.line("SINOV CHEKI")
+    c.line("-" * W)
+    c.line("Printer ishlayapti!")
+    c.line(fmt_time(int(time.time())))
+    return c.finish()
+
+
+def _print_windows(data: bytes, printer_name: str) -> str:
+    import ctypes
+    from ctypes import wintypes
+
+    winspool = ctypes.WinDLL("winspool.drv", use_last_error=True)
+
+    class DOC_INFO_1(ctypes.Structure):
+        _fields_ = [
+            ("pDocName", wintypes.LPWSTR),
+            ("pOutputFile", wintypes.LPWSTR),
+            ("pDatatype", wintypes.LPWSTR),
+        ]
+
+    winspool.GetDefaultPrinterW.argtypes = [wintypes.LPWSTR, wintypes.LPDWORD]
+    winspool.GetDefaultPrinterW.restype = wintypes.BOOL
+    winspool.OpenPrinterW.argtypes = [wintypes.LPWSTR, ctypes.POINTER(wintypes.HANDLE), wintypes.LPVOID]
+    winspool.OpenPrinterW.restype = wintypes.BOOL
+    winspool.StartDocPrinterW.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(DOC_INFO_1)]
+    winspool.StartDocPrinterW.restype = wintypes.DWORD
+    winspool.StartPagePrinter.argtypes = [wintypes.HANDLE]
+    winspool.StartPagePrinter.restype = wintypes.BOOL
+    winspool.WritePrinter.argtypes = [wintypes.HANDLE, wintypes.LPCVOID, wintypes.DWORD, wintypes.LPDWORD]
+    winspool.WritePrinter.restype = wintypes.BOOL
+    winspool.EndPagePrinter.argtypes = [wintypes.HANDLE]
+    winspool.EndDocPrinter.argtypes = [wintypes.HANDLE]
+    winspool.ClosePrinter.argtypes = [wintypes.HANDLE]
+
+    if not printer_name:
+        size = wintypes.DWORD(0)
+        winspool.GetDefaultPrinterW(None, ctypes.byref(size))
+        buf = ctypes.create_unicode_buffer(max(size.value, 1))
+        if not winspool.GetDefaultPrinterW(buf, ctypes.byref(size)):
+            raise OSError(
+                "Windows'da standart printer tanlanmagan. Printerni standart qiling "
+                "yoki bot.py dagi PRINTER_NAME ga uning nomini yozing."
+            )
+        printer_name = buf.value
+
+    handle = wintypes.HANDLE()
+    if not winspool.OpenPrinterW(printer_name, ctypes.byref(handle), None):
+        raise OSError(f"Printer topilmadi: '{printer_name}'. Windows'dagi printer nomini tekshiring.")
+    try:
+        doc = DOC_INFO_1("Street Dog chek", None, "RAW")
+        if not winspool.StartDocPrinterW(handle, 1, ctypes.byref(doc)):
+            raise OSError(f"Printer ishga tushmadi: '{printer_name}'")
+        try:
+            winspool.StartPagePrinter(handle)
+            written = wintypes.DWORD(0)
+            ok = winspool.WritePrinter(handle, data, len(data), ctypes.byref(written))
+            winspool.EndPagePrinter(handle)
+            if not ok or written.value != len(data):
+                raise OSError(f"Printerga yozib bo'lmadi: '{printer_name}'")
+        finally:
+            winspool.EndDocPrinter(handle)
+    finally:
+        winspool.ClosePrinter(handle)
+    return printer_name
+
+
+def send_to_printer(data: bytes) -> str:
+    """Chekni printerga yuboradi (bloklaydi). Qaysi printerga ketganini qaytaradi."""
+    with _print_lock:
+        if PRINTER_IP:
+            with socket.create_connection((PRINTER_IP, PRINTER_PORT), timeout=5) as sock:
+                sock.settimeout(10)
+                sock.sendall(data)
+            return f"{PRINTER_IP}:{PRINTER_PORT}"
+        if os.name == "nt":
+            return _print_windows(data, PRINTER_NAME)
+        raise OSError("Bu kompyuter Windows emas. LAN printer uchun PRINTER_IP ni yozing.")
+
+
+async def print_order_chek(bot, order_id: int) -> None:
+    if not PRINTER_ENABLED:
+        return
+    order = get_order(order_id)
+    if not order:
+        return
+    try:
+        data = build_chek(order)
+        await asyncio.get_running_loop().run_in_executor(None, send_to_printer, data)
+    except Exception as exc:
+        log.warning("Chek chiqmadi (#%s): %s", order_no(order), exc)
+        warn = (
+            f"⚠️ Chek chiqmadi (buyurtma #{order_no(order)}): {esc(exc)}\n"
+            f"Printerni tekshirib, /chek {order_no(order)} bilan qayta chiqaring."
+        )
+        for admin_id in ADMIN_IDS:
+            await safe_send(bot, admin_id, warn)
 
 
 # =====================================================================
@@ -935,6 +1238,7 @@ async def api_order(request):
         # Buyurtma bazaga saqlandi. Telegramga yuborish orqada ketadi —
         # Telegram band bo'lsa ham mijoz xatolik ko'rmaydi.
         spawn(notify_new_order(request.app["bot"], order_id))
+        spawn(print_order_chek(request.app["bot"], order_id))
     return web.json_response({"ok": True, "order_id": order_id, "total": order_total})
 
 
@@ -1205,6 +1509,174 @@ def build_stats_text() -> str:
     return "\n".join(lines)
 
 
+# ---- Smena hisoboti va yangi buyruqlar ----
+def report_only(handler):
+    @functools.wraps(handler)
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user = update.effective_user
+        if not user or (user.id not in ADMIN_IDS and user.id not in REPORT_IDS):
+            return
+        return await handler(update, context)
+
+    return wrapper
+
+
+def shift_since() -> int:
+    raw = get_setting("last_report_ts", "")
+    if raw.isdigit():
+        return int(raw)
+    return _day_bounds(int(time.time()))[1]
+
+
+def build_shift_report(since: int, until: int, note: str = ""):
+    rows = db().execute(
+        "SELECT status, total, payment, delivery_type FROM orders WHERE created_at>=? AND created_at<?",
+        (since, until),
+    ).fetchall()
+    valid = [r for r in rows if r["status"] != "cancelled"]
+    cancelled = len(rows) - len(valid)
+    revenue = sum(r["total"] for r in valid)
+    share = int(revenue * COMMISSION_PERCENT / 100 + 0.5)
+    pct = f"{COMMISSION_PERCENT:g}"
+
+    t0 = datetime.fromtimestamp(since, LOCAL_TZ)
+    t1 = datetime.fromtimestamp(until, LOCAL_TZ)
+    if t0.date() == t1.date():
+        period = f"{t1.strftime('%d.%m.%Y')} · {t0.strftime('%H:%M')} → {t1.strftime('%H:%M')}"
+    else:
+        period = f"{t0.strftime('%d.%m %H:%M')} → {t1.strftime('%d.%m.%Y %H:%M')}"
+
+    orders_line = f"🧾 Buyurtmalar: {len(valid)} ta"
+    if cancelled:
+        orders_line += f" (bekor qilingan: {cancelled})"
+    lines = [f"📊 <b>SMENA HISOBOTI</b>{(' ' + esc(note)) if note else ''}", f"📅 {period}", "", orders_line]
+    lines += [
+        f"💰 Savdo: <b>{fmt_money(revenue)} so'm</b>",
+        f"🤝 Sizning ulushingiz ({pct}%): <b>{fmt_money(share)} so'm</b>",
+    ]
+    if valid:
+        by_pay: dict = {}
+        for r in valid:
+            s, n = by_pay.get(r["payment"], (0, 0))
+            by_pay[r["payment"]] = (s + r["total"], n + 1)
+        lines.append("")
+        for name, (s, n) in sorted(by_pay.items(), key=lambda kv: -kv[1][0]):
+            lines.append(f"💳 {esc(name)}: {fmt_money(s)} so'm ({n} ta)")
+        dl = sum(1 for r in valid if r["delivery_type"] == "delivery")
+        lines.append(f"🛵 Dostavka: {dl} ta · 🏃 Olib ketish: {len(valid) - dl} ta")
+    lines += ["", "ℹ️ Faqat bot orqali kelgan buyurtmalar hisoblanadi."]
+    return "\n".join(lines), len(valid), revenue, share
+
+
+async def send_shift_report(bot, since: int, until: int, note: str = "") -> int:
+    text, _, _, _ = build_shift_report(since, until, note)
+    for chat_id in REPORT_IDS:
+        await safe_send(bot, chat_id, text)
+    set_setting("last_report_date", datetime.fromtimestamp(until, LOCAL_TZ).strftime("%Y-%m-%d"))
+    return until
+
+
+def _orders_between(since: int, until: int) -> int:
+    return db().execute(
+        "SELECT COUNT(*) AS n FROM orders WHERE created_at>=? AND created_at<?", (since, until)
+    ).fetchone()["n"]
+
+
+def _report_time():
+    m = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*", SMENA_HISOBOT_VAQTI or "")
+    if m and int(m.group(1)) < 24 and int(m.group(2)) < 60:
+        return int(m.group(1)), int(m.group(2))
+    return 23, 0
+
+
+async def run_report_checks(bot, now: datetime, first_pass: bool = False) -> None:
+    """Har kuni belgilangan vaqtda smena hisobotini yuboradi. Bot o'chiq turgan kunlar uchun — ishga tushganda."""
+    today = now.strftime("%Y-%m-%d")
+    day0 = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+    if first_pass:
+        since = shift_since()
+        if since < day0:  # oldingi kun(lar) hisoboti yuborilmay qolgan
+            if _orders_between(since, day0):
+                await send_shift_report(bot, since, day0, "(o'tkazib yuborilgan smena)")
+            set_setting("last_report_ts", str(day0))
+    hh, mm = _report_time()
+    due = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    if now >= due and get_setting("auto_report_date") != today:
+        set_setting("auto_report_date", today)  # ikki marta yuborilmasligi uchun avval belgilaymiz
+        until = int(now.timestamp())
+        since = shift_since()
+        if _orders_between(since, until) == 0 and get_setting("last_report_date") == today:
+            return  # bugun hisobot yuborilgan va undan keyin buyurtma bo'lmagan
+        await send_shift_report(bot, since, until)
+        set_setting("last_report_ts", str(until))
+
+
+async def smena_scheduler(bot) -> None:
+    first = True
+    while True:
+        try:
+            await run_report_checks(bot, datetime.now(LOCAL_TZ), first_pass=first)
+            first = False
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Smena hisoboti xatosi")
+        await asyncio.sleep(30)
+
+
+@report_only
+async def cmd_hisobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text, _, _, _ = build_shift_report(shift_since(), int(time.time()))
+    await update.message.reply_text(
+        text + "\n\n(Bu joriy smena hisoboti. Smenani yopish: /smena)", parse_mode=ParseMode.HTML
+    )
+
+
+@report_only
+async def cmd_smena(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    until = int(time.time())
+    await send_shift_report(context.bot, shift_since(), until)
+    set_setting("last_report_ts", str(until))
+    await update.message.reply_text("✅ Smena yopildi, hisobot yuborildi. Keyingi hisobot shu paytdan boshlab hisoblanadi.")
+
+
+@admin_only
+async def cmd_raqam(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text(
+            f"Keyingi buyurtma raqami: #{next_order_no()}\n"
+            "O'zgartirish: /raqam 4  (kafedagi hozirgi oxirgi buyurtma raqami 4 bo'lsa)"
+        )
+        return
+    arg = context.args[0].lstrip("#")
+    if not arg.isdigit() or int(arg) > 100000:
+        await update.message.reply_text("Raqam noto'g'ri. Masalan: /raqam 4")
+        return
+    nxt = set_last_order_no(int(arg))
+    await update.message.reply_text(f"✅ Tayyor. Keyingi buyurtma #{nxt} bo'ladi.")
+
+
+@admin_only
+async def cmd_chek(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not PRINTER_ENABLED:
+        await update.message.reply_text("Printer o'chirilgan (bot.py da PRINTER_ENABLED = False).")
+        return
+    if context.args:
+        arg = context.args[0].lstrip("#")
+        order = find_order_by_no(int(arg)) if arg.isdigit() else None
+        if not order:
+            await update.message.reply_text("Bugun bunday raqamli buyurtma topilmadi. Masalan: /chek 5")
+            return
+        data, label = build_chek(order), f"Buyurtma #{order_no(order)} cheki"
+    else:
+        data, label = build_test_chek(), "Sinov cheki"
+    try:
+        where = await asyncio.get_running_loop().run_in_executor(None, send_to_printer, data)
+        await update.message.reply_text(f"🖨 {label} printerga yuborildi ({where}).")
+    except Exception as exc:
+        await update.message.reply_text(f"❌ Chek chiqmadi: {exc}")
+
+
 # ---- Broadcast ----
 @admin_only
 async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1344,7 +1816,7 @@ async def on_rate_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(f"Bahoyingiz uchun rahmat! {'⭐' * rating}")
     for admin_id in ADMIN_IDS:
         await safe_send(
-            context.bot, admin_id, f"⭐ Buyurtma #{order_id} uchun mijoz {rating} baho berdi."
+            context.bot, admin_id, f"⭐ Buyurtma #{order_no(order)} uchun mijoz {rating} baho berdi."
         )
 
 
@@ -1367,6 +1839,10 @@ ADMIN_COMMANDS = USER_COMMANDS + [
     BotCommand("stop", "Stop-list (tugagan taomlar)"),
     BotCommand("stats", "Statistika"),
     BotCommand("broadcast", "Hammaga xabar yuborish"),
+    BotCommand("chek", "Chekni qayta chiqarish / sinov"),
+    BotCommand("raqam", "Buyurtma raqamini belgilash"),
+    BotCommand("hisobot", "Joriy smena hisoboti"),
+    BotCommand("smena", "Smenani yopish"),
 ]
 
 
@@ -1460,6 +1936,7 @@ async def post_init(application):
     await site.start()
     application.bot_data["web_runner"] = runner
     log.info("Buyurtma serveri ishga tushdi: http://%s:%s", HOST, PORT)
+    spawn(smena_scheduler(application.bot))
 
     # Ilovaga internetdan kirish manzili
     if not WEB_APP_URL:
@@ -1527,6 +2004,10 @@ def main():
     app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(CommandHandler("stats", cmd_stats))
     app.add_handler(CommandHandler("broadcast", cmd_broadcast))
+    app.add_handler(CommandHandler("chek", cmd_chek))
+    app.add_handler(CommandHandler("raqam", cmd_raqam))
+    app.add_handler(CommandHandler("hisobot", cmd_hisobot))
+    app.add_handler(CommandHandler("smena", cmd_smena))
 
     app.add_handler(CallbackQueryHandler(on_status_callback, pattern=r"^st:\d+:(accepted|ready|onway|done|cancelled)$"))
     app.add_handler(CallbackQueryHandler(on_cancel_ask_callback, pattern=r"^cq:\d+$"))
