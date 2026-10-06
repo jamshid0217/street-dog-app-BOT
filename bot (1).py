@@ -11,6 +11,7 @@ Sozlamalar .env faylida (qarang: .env.example). Token kodda saqlanmaydi.
 from __future__ import annotations
 
 import asyncio
+import atexit
 import functools
 import hashlib
 import hmac
@@ -20,7 +21,10 @@ import logging
 import math
 import os
 import re
+import shutil
 import sqlite3
+import subprocess
+import threading
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -69,7 +73,7 @@ def load_env_file(path: Path) -> None:
 
 
 BASE_DIR = Path(__file__).resolve().parent
-load_env_file(BASE_DIR / ".env")
+# (.env fayl endi kerak emas — sozlamalar pastda, shu faylning o'zida)
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -109,24 +113,30 @@ def env_int_list(name: str, default: str) -> list:
     return result
 
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-WEB_APP_URL = os.getenv("WEB_APP_URL", "https://jamshid0217.github.io/street-dog-app/").strip()
-ADMIN_IDS = env_int_list("ADMIN_IDS", "6069854654")
-COURIER_CHAT_ID = env_int("COURIER_CHAT_ID", None)  # kuryerlar guruhi (ixtiyoriy)
-ALLOWED_ORIGINS = [
-    o.strip().rstrip("/")
-    for o in os.getenv("ALLOWED_ORIGINS", "https://jamshid0217.github.io").split(",")
-    if o.strip()
-]
-HOST = os.getenv("HOST", "0.0.0.0").strip()
-PORT = env_int("PORT", 8080)
-DB_PATH = os.getenv("DB_PATH", str(BASE_DIR / "street_dog.db")).strip()
+# =====================================================================
+#  SOZLAMALAR — hamma narsa SHU YERDA. Boshqa fayl kerak emas.
+#  ⚠️ Bu faylni hech kimga yubormang va internetga (GitHub) yuklamang —
+#     ichida bot tokeni bor.
+# =====================================================================
+BOT_TOKEN = '8983485871:AAG7TWkeTb9uFDTkj2g9tlQl6xHAt24a5vA'  # @BotFather bergan token
+ADMIN_IDS = [6069854654]  # admin(lar) Telegram ID si
+COURIER_CHAT_ID = None  # kuryerlar guruhi ID si (ixtiyoriy)
 
-CONTACT_PHONE = os.getenv("CONTACT_PHONE", "+998 91 966 40 40").strip()
-CAFE_ADDRESS = os.getenv("CAFE_ADDRESS", "Urganch shahri").strip()
-WORK_HOURS = os.getenv("WORK_HOURS", "").strip()
-CAFE_LAT = env_float("CAFE_LAT")
-CAFE_LON = env_float("CAFE_LON")
+CONTACT_PHONE = '+998 91 966 40 40'
+CAFE_ADDRESS = 'Urganch shahri'
+WORK_HOURS = '10:00 - 23:00'
+CAFE_LAT = None  # kafe lokatsiyasi (ixtiyoriy)
+CAFE_LON = None
+
+# Ilova manzili ODATDA bo'sh qoladi: bot internetga chiqish manzilini (cloudflared)
+# o'zi topadi va "Open App" tugmasiga o'zi qo'yadi. Faqat doimiy hosting/domeningiz
+# bo'lsa, shu yerga yozing: "https://sizning-domen.uz"
+WEB_APP_URL = ""
+
+PORT = 8080
+HOST = "127.0.0.1"  # faqat shu kompyuter ichida; tashqariga cloudflared olib chiqadi
+ALLOWED_ORIGINS = ["https://jamshid0217.github.io"]  # ilova serverdan ochilgani uchun endi muhim emas
+DB_PATH = str(BASE_DIR / "street_dog.db")  # buyurtmalar bazasi — o'zi yaratiladi
 
 # O'zbekiston vaqti (UTC+5, yozgi/qishki vaqt yo'q)
 LOCAL_TZ = timezone(timedelta(hours=5))
@@ -790,6 +800,17 @@ async def api_health(request):
     return web.Response(text="Street Dog server ishlayapti ✅")
 
 
+async def serve_index(request):
+    """Ilovaning o'zini (index.html) shu server beradi — GitHub Pages kerak emas."""
+    page = BASE_DIR / "index.html"
+    if not page.exists():
+        return web.Response(
+            text="Street Dog server ishlayapti ✅\n(index.html bot.py bilan bir papkada emas)",
+            status=404,
+        )
+    return web.FileResponse(page, headers={"Cache-Control": "no-store"})
+
+
 async def api_status(request):
     return web.json_response(
         {
@@ -942,7 +963,8 @@ async def api_my_orders(request):
 def build_web_app(bot) -> web.Application:
     app = web.Application(middlewares=[cors_middleware], client_max_size=64 * 1024)
     app["bot"] = bot
-    app.router.add_get("/", api_health)
+    app.router.add_get("/", serve_index)
+    app.router.add_get("/health", api_health)
     app.router.add_get("/api/status", api_status)
     app.router.add_post("/api/order", api_order)
     app.router.add_post("/api/my_orders", api_my_orders)
@@ -1348,11 +1370,78 @@ ADMIN_COMMANDS = USER_COMMANDS + [
 ]
 
 
-async def post_init(application):
-    # Chat chap pastida faqat "Open App" tugmasi turadi
-    await application.bot.set_chat_menu_button(
-        menu_button=MenuButtonWebApp(text="Open App", web_app=WebAppInfo(url=WEB_APP_URL))
+# ---- INTERNETGA CHIQISH (cloudflared) — avtomatik ----
+TUNNEL_RE = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
+_tunnel_proc = None
+
+
+def find_cloudflared():
+    candidates = [shutil.which("cloudflared"), shutil.which("cloudflared.exe"), str(BASE_DIR / "cloudflared.exe")]
+    for var, sub in (
+        ("ProgramFiles(x86)", "cloudflared"),
+        ("ProgramFiles", "cloudflared"),
+        ("LOCALAPPDATA", "Microsoft/WinGet/Links"),
+    ):
+        base = os.environ.get(var)
+        if base:
+            candidates.append(str(Path(base) / sub / "cloudflared.exe"))
+    for c in candidates:
+        if c and Path(c).exists():
+            return c
+    return None
+
+
+def stop_tunnel() -> None:
+    global _tunnel_proc
+    proc, _tunnel_proc = _tunnel_proc, None
+    if proc is not None and proc.poll() is None:
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+
+
+def start_tunnel(exe: str, port: int, timeout: float = 60.0):
+    """cloudflared ni ishga tushiradi va https://....trycloudflare.com manzilini qaytaradi."""
+    global _tunnel_proc
+    kwargs = {}
+    if os.name == "nt":
+        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+    proc = subprocess.Popen(
+        [exe, "tunnel", "--url", f"http://127.0.0.1:{port}", "--no-autoupdate", "--protocol", "http2"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        **kwargs,
     )
+    _tunnel_proc = proc
+    found = threading.Event()
+    box = {}
+
+    def reader():
+        # stderr ni oxirigacha o'qib turish shart, aks holda cloudflared qotib qoladi
+        for line in proc.stderr:
+            if "url" not in box:
+                for m in TUNNEL_RE.finditer(line):
+                    if m.group(0) != "https://api.trycloudflare.com":
+                        box["url"] = m.group(0)
+                        found.set()
+                        break
+        found.set()
+
+    threading.Thread(target=reader, daemon=True).start()
+    found.wait(timeout)
+    return box.get("url")
+
+
+atexit.register(stop_tunnel)
+# ---- /INTERNETGA CHIQISH ----
+
+
+async def post_init(application):
+    global WEB_APP_URL
     try:
         await application.bot.set_my_commands(USER_COMMANDS)
         for admin_id in ADMIN_IDS:
@@ -1372,8 +1461,35 @@ async def post_init(application):
     application.bot_data["web_runner"] = runner
     log.info("Buyurtma serveri ishga tushdi: http://%s:%s", HOST, PORT)
 
+    # Ilovaga internetdan kirish manzili
+    if not WEB_APP_URL:
+        exe = find_cloudflared()
+        if exe is None:
+            print(
+                "\n⚠️  cloudflared topilmadi, shuning uchun ilova internetdan ochilmaydi.\n"
+                "   Bir marta o'rnating (PowerShell'da):\n"
+                "       winget install --id Cloudflare.cloudflared\n"
+                "   Keyin PowerShell/VS Code'ni yopib qayta oching va botni qayta ishga tushiring.\n"
+            )
+        else:
+            print("🌐 Internetga chiqish manzili olinmoqda (10-30 soniya)...")
+            loop = asyncio.get_running_loop()
+            url = await loop.run_in_executor(None, start_tunnel, exe, PORT)
+            if url:
+                WEB_APP_URL = url
+            else:
+                print("⚠️  Manzil olinmadi. Internetni tekshirib, botni qayta ishga tushiring.")
+
+    if WEB_APP_URL:
+        # Chat chap pastida faqat "Open App" tugmasi turadi
+        await application.bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(text="Open App", web_app=WebAppInfo(url=WEB_APP_URL))
+        )
+        print(f"\n✅ Ilova manzili: {WEB_APP_URL}\n   Telegramda botga /start yuboring va 'Open App' ni bosing.\n")
+
 
 async def post_shutdown(application):
+    stop_tunnel()
     runner = application.bot_data.get("web_runner")
     if runner is not None:
         await runner.cleanup()
@@ -1383,12 +1499,10 @@ def main():
     if not BOT_TOKEN:
         raise SystemExit(
             "❌ BOT_TOKEN topilmadi.\n"
-            "   bot.py yonida '.env' fayl yarating va ichiga yozing:\n"
-            "   BOT_TOKEN=BotFather bergan token\n"
-            "   (namuna: .env.example)"
+            "   bot.py ning yuqorisidagi  BOT_TOKEN = \"\"  qatoriga @BotFather bergan tokenni yozing."
         )
     if not ADMIN_IDS:
-        raise SystemExit("❌ ADMIN_IDS topilmadi. .env faylga ADMIN_IDS=sizning_telegram_id yozing.")
+        raise SystemExit("❌ ADMIN_IDS topilmadi. bot.py yuqorisidagi ADMIN_IDS = [...] ga Telegram ID yozing.")
 
     init_db()
 
