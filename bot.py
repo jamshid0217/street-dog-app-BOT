@@ -154,7 +154,7 @@ WEB_APP_URL = ""
 # uning manzilini shu yerga yozing, masalan: "https://jamshid0217.github.io/street-dog/"
 # Bot ishga tushganda "Open App" tugmasiga shu manzil + hozirgi server manzilini (?api=...) qo'yadi.
 # Bo'sh qoldirsangiz — sayt botning o'zidan beriladi (bot o'chiq bo'lsa sayt ham ochilmaydi).
-STATIC_APP_URL = "https://jamshid0217.github.io/REPO_NOMI/"
+STATIC_APP_URL = ""
 
 PORT = 8080
 HOST = "127.0.0.1"  # faqat shu kompyuter ichida; tashqariga cloudflared olib chiqadi
