@@ -201,17 +201,19 @@
       text-overflow: ellipsis;
     }
 
-    .product-desc {
-      font-size: 11px;
-      color: #ccc;
-      margin-bottom: 10px;
-      height: 28px;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      line-height: 1.3;
-    }
+   .product-desc {
+    font-size: 11px;
+    color: #ccc;
+    margin-bottom: 10px;
+    height: 28px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3; /* <-- Nuqta-vergul qo'shildi */
+    line-clamp: 2;      /* <-- Standart xususiyat (xatolikni oldini olish uchun) */
+}
+    
 
     .product-bottom {
       display: flex;
@@ -706,6 +708,31 @@
       gap: 8px;
     }
 
+    .checkout-summary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: #ddd;
+    }
+
+    .checkout-summary .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+    }
+
+    .checkout-summary .row.total {
+      border-top: 1px dashed rgba(255, 255, 255, 0.2);
+      margin-top: 6px;
+      padding-top: 8px;
+      font-weight: 800;
+      color: #ff7a00;
+      font-size: 15px;
+    }
+
     .location-btn {
       background: rgba(255, 122, 0, 0.2);
       border: 1px solid #ff7a00;
@@ -1047,6 +1074,8 @@
         </div>
       </div>
 
+      <div class="checkout-summary" id="checkoutSummary"></div>
+
       <button class="submit-order-btn" id="submitOrderBtn" onclick="confirmOrder()">Tasdiqlash va Yuborish</button>
     </div>
   </div>
@@ -1206,6 +1235,7 @@
     let shopMessage = '';
     let stopList = new Set();
     let pendingClientId = null;
+    let deliveryFee = 10000; // server /api/status orqali yangilaydi (taxminan 5 km gacha)
 
     const STATUS_LABELS = {
       new: 'Qabul qilinishi kutilmoqda ⏳',
@@ -1355,7 +1385,9 @@
       }
 
       nav.addEventListener('pointerdown', function (e) {
-        if (pointerId !== null) return;
+        // Oldingi bosish tugamay qolgan bo'lsa (masalan, sahifa pastiga tortilganda), uni bekor qilamiz —
+        // aks holda tugmalar bosilmay qoladi.
+        if (pointerId !== null) finish(false);
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         pointerId = e.pointerId;
         try { nav.setPointerCapture(e.pointerId); } catch (err) {}
@@ -1380,6 +1412,29 @@
       });
 
       nav.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+      // Barmoq nav'dan tashqarida ko'tarilsa yoki hodisa yo'qolsa ham holat qotib qolmasin
+      nav.addEventListener('lostpointercapture', function (e) {
+        if (e.pointerId === pointerId) finish(false);
+      });
+      ['pointerup', 'pointercancel'].forEach(function (name) {
+        window.addEventListener(name, function (e) {
+          if (e.pointerId === pointerId) finish(name === 'pointerup');
+        });
+      });
+      window.addEventListener('blur', function () { finish(false); });
+      document.addEventListener('visibilitychange', function () { if (document.hidden) finish(false); });
+
+      // Zaxira: pointer hodisalari ishlamasa ham oddiy bosish bo'limni almashtiradi
+      let lastSwitch = 0;
+      const origSwitch = window.switchTab;
+      window.switchTab = function () { lastSwitch = Date.now(); return origSwitch.apply(this, arguments); };
+      items.forEach(function (el) {
+        el.addEventListener('click', function () {
+          if (Date.now() - lastSwitch < 500) return; // pointer yo'li allaqachon almashtirgan
+          if (!el.classList.contains('active')) switchTab(el.dataset.tab, el);
+        });
+      });
 
       window.addEventListener('resize', positionNavGlass);
       window.addEventListener('load', positionNavGlass);
@@ -1504,11 +1559,25 @@
       }
     }
 
+    function updateCheckoutSummary() {
+      const box = document.getElementById('checkoutSummary');
+      if (!box) return;
+      let food = 0;
+      Object.values(cart).forEach(item => { food += item.price * item.count; });
+      const fee = selectedDelivery === 'delivery' ? deliveryFee : 0;
+      box.innerHTML = `
+        <div class="row"><span>Taomlar</span><span>${food.toLocaleString()} so'm</span></div>
+        <div class="row"><span>Dostavka</span><span>${fee > 0 ? fee.toLocaleString() + " so'm" : 'Bepul'}</span></div>
+        <div class="row total"><span>Jami</span><span>${(food + fee).toLocaleString()} so'm</span></div>
+      `;
+    }
+
     function openCheckoutModal() {
       if (shopClosed) {
         alert(shopMessage || "Hozir buyurtma qabul qilinmaydi. Iltimos, keyinroq urinib ko'ring.");
         return;
       }
+      updateCheckoutSummary();
       document.getElementById('checkoutModal').classList.add('active');
     }
 
@@ -1531,6 +1600,7 @@
         delBtn.classList.remove('active');
         addressGroup.style.display = 'none';
       }
+      updateCheckoutSummary();
     }
 
     function selectPaymentMethod(method) {
@@ -1608,6 +1678,7 @@
         shopClosed = !data.open;
         shopMessage = data.message || '';
         stopList = new Set(Array.isArray(data.stoplist) ? data.stoplist : []);
+        if (Number.isFinite(data.delivery_fee)) { deliveryFee = data.delivery_fee; updateCheckoutSummary(); }
         serverOffline = false;
         applyShopStatus();
       } catch (e) {
@@ -1745,6 +1816,7 @@
           status: 'new',
           date: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
           totalPrice: data.total,
+          deliveryFee: selectedDelivery === 'delivery' ? deliveryFee : 0,
           items: itemsList
         };
 
@@ -1809,6 +1881,19 @@
             </li>
           `;
         });
+
+        if (order.deliveryFee > 0) {
+          itemsHtml += `
+            <li>
+              <div class="order-item-left">
+                <div class="order-item-info">
+                  <span class="order-item-title">🛵 Dostavka</span>
+                </div>
+              </div>
+              <span class="order-item-price">${order.deliveryFee.toLocaleString()} so'm</span>
+            </li>
+          `;
+        }
 
         html += `
           <div class="order-card">

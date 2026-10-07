@@ -141,6 +141,9 @@ PRINTER_PORT = 9100
 PRINTER_WIDTH = 48      # 80 mm qog'oz = 48, 58 mm qog'oz = 32
 CAFE_NAME = "STREET DOG"
 
+# ---- DOSTAVKA ----
+DELIVERY_FEE = 10000  # dostavka narxi (so'm), taxminan 5 km gacha. Olib ketishda 0.
+
 # ---- SMENA HISOBOTI ----
 COMMISSION_PERCENT = 5          # savdodan sizning ulushingiz (foiz)
 SMENA_HISOBOT_VAQTI = "23:00"   # hisobot har kuni shu vaqtda o'zi yuboriladi (SS:DD)
@@ -365,6 +368,10 @@ def init_db() -> None:
         db().execute("ALTER TABLE orders ADD COLUMN day_no INTEGER")
     except sqlite3.OperationalError:
         pass
+    try:  # eski bazalar uchun: dostavka haqi ustuni
+        db().execute("ALTER TABLE orders ADD COLUMN delivery_fee INTEGER NOT NULL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
 
 
 # ---- sozlamalar (ochiq/yopiq) ----
@@ -426,7 +433,7 @@ def mark_blocked(user_id: int) -> None:
 
 
 # ---- buyurtmalar ----
-def create_order(user: dict, client_id, phone, delivery, address, lat, lon, payment, items, total):
+def create_order(user: dict, client_id, phone, delivery, address, lat, lon, payment, items, total, delivery_fee=0):
     """(order_id, total, yangi_yaratildimi) qaytaradi."""
     conn = db()
     uid = user["id"]
@@ -440,8 +447,8 @@ def create_order(user: dict, client_id, phone, delivery, address, lat, lon, paym
     day_no = next_order_no(now)  # hisoblash va yozish orasida await yo'q — raqamlar takrorlanmaydi
     cur = conn.execute(
         "INSERT INTO orders (client_id, user_id, username, full_name, phone, delivery_type, "
-        "address, lat, lon, payment, items_json, total, status, created_at, updated_at, day_no) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)",
+        "address, lat, lon, payment, items_json, total, status, created_at, updated_at, day_no, delivery_fee) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?)",
         (
             client_id,
             uid,
@@ -458,6 +465,7 @@ def create_order(user: dict, client_id, phone, delivery, address, lat, lon, paym
             now,
             now,
             day_no,
+            delivery_fee,
         ),
     )
     return cur.lastrowid, total, True
@@ -521,6 +529,14 @@ def set_last_order_no(n: int) -> int:
     day0, _, _ = _day_bounds(int(time.time()))
     set_setting("no_floor", f"{day0.strftime('%Y-%m-%d')}|{n}")
     return next_order_no()
+
+
+def order_fee(order) -> int:
+    """Buyurtmadagi dostavka haqi (eski buyurtmalarda 0)."""
+    try:
+        return int(order["delivery_fee"] or 0)
+    except (IndexError, KeyError, TypeError, ValueError):
+        return 0
 
 
 def order_no(order) -> int:
@@ -696,6 +712,7 @@ def order_text(order) -> str:
         "",
         "📦 <b>Buyurtma tarkibi:</b>",
         *lines,
+        *([f"🛵 Dostavka: {fmt_money(order_fee(order))} so'm"] if order_fee(order) else []),
         "",
         f"💵 <b>Jami: {fmt_money(order['total'])} so'm</b>",
         f"🕒 {fmt_time(order['created_at'])}",
@@ -715,6 +732,7 @@ def receipt_text(order) -> str:
             f"✅ <b>Buyurtmangiz qabul qilindi! (#{order_no(order)})</b>",
             "",
             *lines,
+            *([f"🛵 Dostavka: {fmt_money(order_fee(order))} so'm"] if order_fee(order) else []),
             "",
             f"💵 <b>Jami: {fmt_money(order['total'])} so'm</b>",
             f"🚚 {'Dostavka 🛵' if is_delivery else 'Olib ketish 🏃‍♂️'}",
@@ -940,6 +958,9 @@ def build_chek(order) -> bytes:
     for i in items:
         for ln in _lr(f"{i['count']} x {i['name']}", fmt_money(i["price"] * i["count"]), W):
             c.line(ln)
+    if order_fee(order):
+        for ln in _lr("Dostavka", fmt_money(order_fee(order)), W):
+            c.line(ln)
     c.line("-" * W)
     c.bold(True)
     c.size(0x11)
@@ -1126,6 +1147,7 @@ async def api_status(request):
             "open": is_open(),
             "message": "" if is_open() else closed_message(),
             "stoplist": sorted(get_stoplist()),
+            "delivery_fee": DELIVERY_FEE,
         }
     )
 
@@ -1225,6 +1247,9 @@ async def api_order(request):
     else:
         address = ""
 
+    delivery_fee = DELIVERY_FEE if delivery == "delivery" else 0
+    total += delivery_fee
+
     payment = body.get("payment")
     if not isinstance(payment, str) or payment not in PAYMENT_METHODS:
         return jerr("To'lov usuli noto'g'ri.")
@@ -1237,7 +1262,7 @@ async def api_order(request):
 
     upsert_user(user["id"], user["username"], user["full_name"])
     order_id, order_total, created = create_order(
-        user, client_id, phone, delivery, address or None, lat, lon, payment, items, total
+        user, client_id, phone, delivery, address or None, lat, lon, payment, items, total, delivery_fee
     )
     if created:
         # Buyurtma bazaga saqlandi. Telegramga yuborish orqada ketadi —
@@ -1506,7 +1531,7 @@ def build_stats_text() -> str:
     lines = ["<b>📈 Statistika</b>", ""]
     for label, since in periods:
         rows = conn.execute(
-            "SELECT status, total FROM orders WHERE created_at >= ?", (since,)
+            "SELECT status, total - COALESCE(delivery_fee, 0) AS total FROM orders WHERE created_at >= ?", (since,)
         ).fetchall()
         valid = [r for r in rows if r["status"] != "cancelled"]
         revenue = sum(r["total"] for r in valid)
@@ -1575,7 +1600,7 @@ def shift_since() -> int:
 
 def build_shift_report(since: int, until: int, note: str = ""):
     rows = db().execute(
-        "SELECT status, total, payment, delivery_type FROM orders WHERE created_at>=? AND created_at<?",
+        "SELECT status, total - COALESCE(delivery_fee, 0) AS total, payment, delivery_type FROM orders WHERE created_at>=? AND created_at<?",
         (since, until),
     ).fetchall()
     valid = [r for r in rows if r["status"] != "cancelled"]
@@ -1609,7 +1634,7 @@ def build_shift_report(since: int, until: int, note: str = ""):
             lines.append(f"💳 {esc(name)}: {fmt_money(s)} so'm ({n} ta)")
         dl = sum(1 for r in valid if r["delivery_type"] == "delivery")
         lines.append(f"🛵 Dostavka: {dl} ta · 🏃 Olib ketish: {len(valid) - dl} ta")
-    lines += ["", "ℹ️ Faqat bot orqali kelgan buyurtmalar hisoblanadi."]
+    lines += ["", "ℹ️ Faqat bot orqali kelgan buyurtmalar hisoblanadi. Dostavka haqi savdoga kirmaydi."]
     return "\n".join(lines), len(valid), revenue, share
 
 
