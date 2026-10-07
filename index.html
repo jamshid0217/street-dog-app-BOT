@@ -207,6 +207,9 @@
       margin-bottom: 10px;
       height: 28px;
       overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       line-height: 1.3;
     }
 
@@ -491,8 +494,11 @@
       justify-content: center;
       margin: 0 auto 12px auto;
       font-size: 28px;
+      font-weight: 800;
       color: #fff;
+      overflow: hidden;
     }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
     .profile-name {
       font-size: 18px;
@@ -743,6 +749,9 @@
       padding: 14px; border-radius: 16px; font-weight: 800; font-size: 14px;
       cursor: pointer; text-align: center;
     }
+    .add-to-cart-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .detail-incart { font-size: 12px; font-weight: 700; color: #ff7a00; margin: -10px 0 14px 0; }
+    .detail-incart:empty { display: none; }
 
     /* Do'kon yopiq bo'lganda chiqadigan xabar */
     .closed-banner {
@@ -804,10 +813,6 @@
         <i class="fa-solid fa-bowl-food"></i>
         <span>Garnirlar</span>
       </div>
-      <div class="cat-btn" onclick="filterCategory('drink', this)">
-        <i class="fa-solid fa-wine-glass"></i>
-        <span>Ichimlik</span>
-      </div>
     </div>
 
     <div class="section-title">
@@ -837,12 +842,16 @@
     <div class="profile-container">
       <div class="page-title">Mening profilim 👤</div>
       <div class="profile-card">
-        <div class="profile-avatar">
+        <div class="profile-avatar" id="profile-avatar">
           <i class="fa-solid fa-user"></i>
         </div>
         <div class="profile-name" id="profile-full-name">Mijoz</div>
         <div class="profile-info" id="profile-username">@telegram</div>
 
+        <div class="profile-menu-item">
+          <span><i class="fa-solid fa-bag-shopping" style="color:#ff7a00; margin-right:8px;"></i> Buyurtmalar soni</span>
+          <span id="profile-orders-count">—</span>
+        </div>
         <div class="profile-menu-item">
           <span><i class="fa-solid fa-location-dot" style="color:#ff7a00; margin-right:8px;"></i> Shahar</span>
           <span>Urganch</span>
@@ -897,14 +906,15 @@
         <div class="detail-price" id="mPrice">0 so'm</div>
       </div>
       <p class="detail-desc" id="mDesc">Mazzali va yangi uzilgan masalliqlardan tayyorlangan maxsus taom.</p>
+      <div class="detail-incart" id="mInCart"></div>
 
       <div class="detail-footer">
         <div class="qty-picker">
           <button onclick="changeModalQty(-1)"><i class="fa-solid fa-minus"></i></button>
-          <span id="mQty">1</span>
+          <span id="mQty">0</span>
           <button onclick="changeModalQty(1)"><i class="fa-solid fa-plus"></i></button>
         </div>
-        <button class="add-to-cart-btn" onclick="addToCartFromModal()">Savatga qo'shish</button>
+        <button class="add-to-cart-btn" id="mAddBtn" onclick="addToCartFromModal()" disabled>Savatga qo'shish</button>
       </div>
     </div>
   </div>
@@ -994,74 +1004,115 @@
       document.getElementById('user-name').innerText = `Salom, ${user.first_name}! 👋`;
       document.getElementById('profile-full-name').innerText = `${user.first_name} ${user.last_name || ''}`;
       document.getElementById('profile-username').innerText = user.username ? `@${user.username}` : 'ID: ' + user.id;
+      initProfileAvatar(user);
+    }
+
+    // Profil rasmi: Telegram bergan bo'lsa shuni, bo'lmasa bot orqali olib ko'rsatamiz (hech narsa topilmasa — bosh harf)
+    function setAvatarImage(src, onFail) {
+      const box = document.getElementById('profile-avatar');
+      if (!box || !src) { if (onFail) onFail(); return; }
+      const img = new Image();
+      img.referrerPolicy = 'no-referrer';
+      img.alt = '';
+      img.onload = () => { box.innerHTML = ''; box.appendChild(img); };
+      img.onerror = () => { if (onFail) onFail(); };
+      img.src = src;
+    }
+
+    async function loadAvatarFromServer() {
+      if (!tg.initData) return '';
+      try {
+        const res = await fetch((API_URL || window.location.origin).replace(/\/+$/, '') + '/api/avatar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ init_data: tg.initData }),
+          cache: 'no-store'
+        });
+        if (!res.ok) return '';
+        return URL.createObjectURL(await res.blob());
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function initProfileAvatar(user) {
+      const showInitial = () => {
+        const box = document.getElementById('profile-avatar');
+        const ch = ((user.first_name || user.username || '').trim().charAt(0) || '').toUpperCase();
+        if (box && ch) box.textContent = ch;
+      };
+      const fromServer = () => loadAvatarFromServer().then(url => setAvatarImage(url, showInitial));
+      if (user.photo_url) setAvatarImage(user.photo_url, fromServer); else fromServer();
+    }
+
+    async function loadProfileStats() {
+      const el = document.getElementById('profile-orders-count');
+      if (!el || !tg.initData || !apiConfigured()) return;
+      try {
+        const data = await apiRequest('/api/my_orders', 'POST', { init_data: tg.initData });
+        if (typeof data.orders_count === 'number') el.innerText = data.orders_count + ' ta';
+      } catch (e) {
+        // Keyingi safar profil ochilganda qayta uriniladi
+      }
     }
 
     const products = {
       // XOT-DOGLAR
-      h1_25: { id: 'h1_25', category: 'hotdog', name: 'Achchiq xot-dog', price: 25000, img: 'https://i.ibb.co/whFmZhY4/uploaded-image.jpg', desc: 'Achchiq sous, sosiska va maxsus salat.' },
-      h1_35: { id: 'h1_35', category: 'hotdog', name: 'Achchiq xot-dog', price: 35000, img: 'https://i.ibb.co/whFmZhY4/uploaded-image.jpg', desc: 'Kattalashtirilgan achchiq xot-dog.' },
-      
-      h2_30: { id: 'h2_30', category: 'hotdog', name: 'Chikago xot-dog', price: 30000, img: 'https://i.ibb.co/d0h8q4T9/uploaded-image.jpg', desc: 'Chikago uslubidagi mazali xot-dog.' },
-      h2_45: { id: 'h2_45', category: 'hotdog', name: 'Chikago xot-dog', price: 45000, img: 'https://i.ibb.co/d0h8q4T9/uploaded-image.jpg', desc: 'Katta portsiya Chikago xot-dog.' },
-
-      h3_50: { id: 'h3_50', category: 'hotdog', name: 'Amerikancha xot-dog', price: 50000, img: 'https://i.ibb.co/SwyLsq23/uploaded-image.jpg', desc: 'Katta o‘lchamdagi amerikancha xot-dog.' },
-      h4_30: { id: 'h4_30', category: 'hotdog', name: 'Nyu-York xot-dog', price: 30000, img: 'https://i.ibb.co/1JX6pT55/uploaded-image.jpg', desc: 'Nyu-York uslubidagi hot-dog.' },
-
-      h5_30: { id: 'h5_30', category: 'hotdog', name: 'Mehiko xot-dog', price: 30000, img: 'https://i.ibb.co/V04WZqTY/uploaded-image.jpg', desc: 'Meksikacha o‘tkir ta’mli xot-dog.' },
-      h5_45: { id: 'h5_45', category: 'hotdog', name: 'Mehiko xot-dog', price: 45000, img: 'https://i.ibb.co/V04WZqTY/uploaded-image.jpg', desc: 'Katta portsiya Mehiko xot-dog.' },
-
-      h6_35: { id: 'h6_35', category: 'hotdog', name: 'Klassik xot-dog', price: 35000, img: 'https://i.ibb.co/nsBf3tYp/uploaded-image.jpg', desc: 'An’anaviy klassik xot-dog.' },
-      
-      h7_30: { id: 'h7_30', category: 'hotdog', name: 'Chikken xot-dog', price: 30000, img: 'https://i.ibb.co/Q3BMMmBc/uploaded-image.jpg', desc: 'Tovuqli sosiska va maxsus sous.' },
-      h7_40: { id: 'h7_40', category: 'hotdog', name: 'Chikken xot-dog', price: 40000, img: 'https://i.ibb.co/Q3BMMmBc/uploaded-image.jpg', desc: 'Katta portsiya tovuqli xot-dog.' },
-      
-      h8_25: { id: 'h8_25', category: 'hotdog', name: 'Fransuzcha xot-dog', price: 25000, img: 'https://i.ibb.co/DHCWRTzt/uploaded-image.jpg', desc: 'Qarsillama kulcha va sosiska.' },
-      h9_30: { id: 'h9_30', category: 'hotdog', name: 'Premium xot-dog', price: 30000, img: 'https://i.ibb.co/wZYLgqbt/uploaded-image.jpg', desc: 'Maxsus premium masalliqlar.' },
-      h10_20: { id: 'h10_20', category: 'hotdog', name: 'Bolalar xot-dogi', price: 20000, img: 'https://i.ibb.co/20BhbqBf/uploaded-image.jpg', desc: 'Kichik bolajonlar uchun mos.' },
-      h11_40: { id: 'h11_40', category: 'hotdog', name: 'Royol Fresh', price: 40000, img: 'https://i.ibb.co/kVcNDpP9/uploaded-image.jpg', desc: 'Yangi sabzavotlar va go‘sht.' },
-      h12_35: { id: 'h12_35', category: 'hotdog', name: 'Sendvich', price: 35000, img: 'https://i.ibb.co/VWHCz3Px/uploaded-image.jpg', desc: 'Klassik toster sendvich.' },
-      h13_35: { id: 'h13_35', category: 'hotdog', name: 'Italyancha sendvich', price: 35000, img: 'https://i.ibb.co/5Xw3QhmR/uploaded-image.jpg', desc: 'Italiya ta’miga ega sendvich.' },
+      h1_25: { id: 'h1_25', category: 'hotdog', name: 'Острый хот-дог (C)', price: 25000, img: 'https://i.ibb.co/whFmZhY4/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, корейский баклажан, свит чили соус, фирменный соус, халапеньо' },
+      h1_35: { id: 'h1_35', category: 'hotdog', name: 'Острый хот-дог (M)', price: 35000, img: 'https://i.ibb.co/whFmZhY4/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, корейский баклажан, свит чили соус, фирменный соус, халапеньо' },
+      h2_30: { id: 'h2_30', category: 'hotdog', name: 'Чикаго хот-дог (C)', price: 30000, img: 'https://i.ibb.co/d0h8q4T9/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, мясо тушеное, сырный соус, фирменный соус' },
+      h2_45: { id: 'h2_45', category: 'hotdog', name: 'Чикаго хот-дог (M)', price: 45000, img: 'https://i.ibb.co/d0h8q4T9/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, мясо тушеное, сырный соус, фирменный соус' },
+      h3_50: { id: 'h3_50', category: 'hotdog', name: 'Американский хот-дог', price: 50000, img: 'https://i.ibb.co/SwyLsq23/uploaded-image.jpg', desc: 'Сытный американский хот-дог с сосиской, горчичным соусом и мясной начинкой' },
+      h4_30: { id: 'h4_30', category: 'hotdog', name: 'Нью-Йорк хот-дог', price: 30000, img: 'https://i.ibb.co/1JX6pT55/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, сол. огурец, горчичный соус, чипсы, кетчуп, майонез' },
+      h5_30: { id: 'h5_30', category: 'hotdog', name: 'Мехико хот-дог (C)', price: 30000, img: 'https://i.ibb.co/V04WZqTY/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, фарш, медовый соус, фирменный соус' },
+      h5_45: { id: 'h5_45', category: 'hotdog', name: 'Мехико хот-дог (M)', price: 45000, img: 'https://i.ibb.co/V04WZqTY/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, фарш, медовый соус, фирменный соус' },
+      h6_35: { id: 'h6_35', category: 'hotdog', name: 'Классический хот-дог', price: 35000, img: 'https://i.ibb.co/nsBf3tYp/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, помидор, огурец, айсберг, сырный соус, кетчуп, майонез' },
+      h7_30: { id: 'h7_30', category: 'hotdog', name: 'Чикен хот-дог (C)', price: 30000, img: 'https://i.ibb.co/Q3BMMmBc/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, курица терияки, сыр чеддер, чипсы, свит чили соус, кетчуп' },
+      h7_40: { id: 'h7_40', category: 'hotdog', name: 'Чикен хот-дог (M)', price: 40000, img: 'https://i.ibb.co/Q3BMMmBc/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, курица терияки, сыр чеддер, чипсы, свит чили соус, кетчуп' },
+      h8_25: { id: 'h8_25', category: 'hotdog', name: 'Французский хот-дог', price: 25000, img: 'https://i.ibb.co/DHCWRTzt/uploaded-image.jpg', desc: 'Твинс батон, сосиска, сырный соус, фирменный соус' },
+      h9_50: { id: 'h9_50', category: 'hotdog', name: 'Премиум хот-дог', price: 50000, img: 'https://i.ibb.co/wZYLgqbt/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, фирменный соус, чеддер сыр, мясо тушеное, сыр моцарелла' },
+      h10_20: { id: 'h10_20', category: 'hotdog', name: 'Детский хот-дог', price: 20000, img: 'https://i.ibb.co/20BhbqBf/uploaded-image.jpg', desc: 'Небольшой хот-дог для детей: мягкая булочка, сосиска и нежный соус' },
+      h11_40: { id: 'h11_40', category: 'hotdog', name: 'Роял фреш', price: 40000, img: 'https://i.ibb.co/kVcNDpP9/uploaded-image.jpg', desc: 'Сосиска 3х, корейский баклажан, фри, халапеньо, сырный соус, фирменный соус, мини чиабатта' },
+      h12_35: { id: 'h12_35', category: 'hotdog', name: 'Сендвич', price: 35000, img: 'https://i.ibb.co/VWHCz3Px/uploaded-image.jpg', desc: 'Горячий тостовый сендвич, нарезанный треугольниками' },
+      h13_35: { id: 'h13_35', category: 'hotdog', name: 'Итальянский сендвич', price: 35000, img: 'https://i.ibb.co/5Xw3QhmR/uploaded-image.jpg', desc: 'Сытный сендвич в итальянском стиле на мягкой булочке со свежими овощами' },
 
       // BURGERLAR
-      b1_65: { id: 'b1_65', category: 'burger', name: 'Strit burger', price: 65000, img: 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', desc: 'Maxsus strit uslubidagi burger.' },
-      b1_80: { id: 'b1_80', category: 'burger', name: 'Strit burger', price: 80000, img: 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', desc: 'Katta portsiya strit burger.' },
-      b1_95: { id: 'b1_95', category: 'burger', name: 'Strit burger', price: 95000, img: 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', desc: 'Mega portsiya strit burger.' },
-
-      b2_65: { id: 'b2_65', category: 'burger', name: 'Klassik burger', price: 65000, img: 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', desc: 'An’anaviy va mazali burger.' },
-      b2_80: { id: 'b2_80', category: 'burger', name: 'Klassik burger', price: 80000, img: 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', desc: 'Katta portsiya klassik burger.' },
-      b2_95: { id: 'b2_95', category: 'burger', name: 'Klassik burger', price: 95000, img: 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', desc: 'Mega portsiya klassik burger.' },
-
-      b3_65: { id: 'b3_65', category: 'burger', name: 'Tryufelli burger', price: 65000, img: 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', desc: 'Maxsus tryufel sousi bilan.' },
-      b3_80: { id: 'b3_80', category: 'burger', name: 'Tryufelli burger', price: 80000, img: 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', desc: 'Katta portsiya tryufelli burger.' },
-      b3_95: { id: 'b3_95', category: 'burger', name: 'Tryufelli burger', price: 95000, img: 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', desc: 'Mega portsiya tryufelli burger.' },
-
-      b4_65: { id: 'b4_65', category: 'burger', name: 'Achchiq burger', price: 65000, img: 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', desc: 'Achchiq qalampir va maxsus sous.' },
-      b4_80: { id: 'b4_80', category: 'burger', name: 'Achchiq burger', price: 80000, img: 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', desc: 'Katta portsiya achchiq burger.' },
-      b4_95: { id: 'b4_95', category: 'burger', name: 'Achchiq burger', price: 95000, img: 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', desc: 'Mega portsiya achchiq burger.' },
-
-      b5_75: { id: 'b5_75', category: 'burger', name: 'Steyk burger', price: 75000, img: 'https://i.ibb.co/DfHMTmw8/uploaded-image.jpg', desc: 'Sharbatli steyk go‘shti va pishloq.' },
-      b6_40: { id: 'b6_40', category: 'burger', name: 'Chizburger', price: 40000, img: 'https://i.ibb.co/pB3Pm196/uploaded-image.jpg', desc: 'Klassik pishloqli burger.' },
-      b7_45: { id: 'b7_45', category: 'burger', name: 'Chikken burger', price: 45000, img: 'https://i.ibb.co/JFG2fX92/uploaded-image.jpg', desc: 'Mazali tovuqli burger.' },
-
-      b8_65: { id: 'b8_65', category: 'burger', name: 'BBK burger', price: 65000, img: 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', desc: 'Maxsus BBK sousli burger.' },
-      b8_80: { id: 'b8_80', category: 'burger', name: 'BBK burger', price: 80000, img: 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', desc: 'Katta portsiya BBK burger.' },
-      b8_95: { id: 'b8_95', category: 'burger', name: 'BBK burger', price: 95000, img: 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', desc: 'Mega portsiya BBK burger.' },
+      b1_65: { id: 'b1_65', category: 'burger', name: 'Стрит бургер (M)', price: 65000, img: 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', desc: 'Фирменный бургер с двумя котлетами и расплавленным сыром' },
+      b1_80: { id: 'b1_80', category: 'burger', name: 'Стрит бургер (L)', price: 80000, img: 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', desc: 'Фирменный бургер с двумя котлетами и расплавленным сыром' },
+      b1_95: { id: 'b1_95', category: 'burger', name: 'Стрит бургер (XL)', price: 95000, img: 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', desc: 'Фирменный бургер с двумя котлетами и расплавленным сыром' },
+      b2_65: { id: 'b2_65', category: 'burger', name: 'Классический (M)', price: 65000, img: 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', desc: 'Булочка, фарш, бургер соус, сыр чеддер, помидор, айсберг, сол. огурец' },
+      b2_80: { id: 'b2_80', category: 'burger', name: 'Классический (L)', price: 80000, img: 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', desc: 'Булочка, фарш, бургер соус, сыр чеддер, помидор, айсберг, сол. огурец' },
+      b2_95: { id: 'b2_95', category: 'burger', name: 'Классический (XL)', price: 95000, img: 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', desc: 'Булочка, фарш, бургер соус, сыр чеддер, помидор, айсберг, сол. огурец' },
+      b3_65: { id: 'b3_65', category: 'burger', name: 'Трюфельный (M)', price: 65000, img: 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', desc: 'Булочка, фарш, трюфельный соус, сыр президент' },
+      b3_80: { id: 'b3_80', category: 'burger', name: 'Трюфельный (L)', price: 80000, img: 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', desc: 'Булочка, фарш, трюфельный соус, сыр президент' },
+      b3_95: { id: 'b3_95', category: 'burger', name: 'Трюфельный (XL)', price: 95000, img: 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', desc: 'Булочка, фарш, трюфельный соус, сыр президент' },
+      b4_65: { id: 'b4_65', category: 'burger', name: 'Острый (M)', price: 65000, img: 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', desc: 'Булочка, фарш, острый соус, сыр чеддер, халапеньо' },
+      b4_80: { id: 'b4_80', category: 'burger', name: 'Острый (L)', price: 80000, img: 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', desc: 'Булочка, фарш, острый соус, сыр чеддер, халапеньо' },
+      b4_95: { id: 'b4_95', category: 'burger', name: 'Острый (XL)', price: 95000, img: 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', desc: 'Булочка, фарш, острый соус, сыр чеддер, халапеньо' },
+      b5_75: { id: 'b5_75', category: 'burger', name: 'Стейк бургер', price: 75000, img: 'https://i.ibb.co/DfHMTmw8/uploaded-image.jpg', desc: 'Булочка 10 см, бонфиле 130-150 гр, фирменный соус, сыр чеддер' },
+      b6_40: { id: 'b6_40', category: 'burger', name: 'Чизбургер', price: 40000, img: 'https://i.ibb.co/pB3Pm196/uploaded-image.jpg', desc: 'Булочка 10 см, фарш 65 гр, бургер соус, сыр чеддер, лук' },
+      b7_45: { id: 'b7_45', category: 'burger', name: 'Чикен бургер', price: 45000, img: 'https://i.ibb.co/JFG2fX92/uploaded-image.jpg', desc: 'Бургер с хрустящей куриной котлетой в панировке, сыром и свежим салатом' },
+      b8_65: { id: 'b8_65', category: 'burger', name: 'ББК (M)', price: 65000, img: 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', desc: 'Булочка, фарш, ББК соус, сыр чеддер, лук, сол. огурец' },
+      b8_80: { id: 'b8_80', category: 'burger', name: 'ББК (L)', price: 80000, img: 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', desc: 'Булочка, фарш, ББК соус, сыр чеддер, лук, сол. огурец' },
+      b8_95: { id: 'b8_95', category: 'burger', name: 'ББК (XL)', price: 95000, img: 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', desc: 'Булочка, фарш, ББК соус, сыр чеддер, лук, сол. огурец' },
 
       // GARNIRLAR & YANGI
-      g1_58: { id: 'g1_58', category: 'garnir', name: 'Strips boks', price: 58000, img: 'https://i.ibb.co/bj5YyyzJ/uploaded-image.jpg', desc: 'Qarsillama stripslar va fri.' },
-      g2_60: { id: 'g2_60', category: 'garnir', name: 'Mitboks', price: 60000, img: 'https://i.ibb.co/gZJDFRcQ/uploaded-image.jpg', desc: 'Go‘shtli va kartoshkali boks.' },
-      g3_35: { id: 'g3_35', category: 'garnir', name: 'Pishloqli yostiqchalar', price: 35000, img: 'https://i.ibb.co/Q79HDdyq/uploaded-image.jpg', desc: 'Erigan pishloqli shariklar.' },
-      g4_30: { id: 'g4_30', category: 'garnir', name: 'Tryufelli fri', price: 30000, img: 'https://i.ibb.co/M5Jym5y0/uploaded-image.jpg', desc: 'Tryufel yog‘i va ziravorlar bilan.' },
-      g5_25: { id: 'g5_25', category: 'garnir', name: 'Aydaxo kartoshka', price: 25000, img: 'https://i.ibb.co/fG4LCkQ3/uploaded-image.jpg', desc: 'Qishloqcha uslubda qovurilgan kartoshka.' },
-      g6_20: { id: 'g6_20', category: 'garnir', name: 'Kartoshka fri', price: 20000, img: 'https://i.ibb.co/3Y53x7B3/uploaded-image.jpg', desc: 'Qarsillama oltinrang fri.' },
-
-      // ICHIMLIKLAR (SUVLAR)
-      p3: { id: 'p3', category: 'drink', name: 'Coca-Cola 0.5L', price: 8000, img: 'https://i.ibb.co/dwrQZzV0/uploaded-image.jpg', desc: 'Salqinlashtiruvchi gazlangan ichimlik.' },
-      p4: { id: 'p4', category: 'drink', name: 'Fanta 0.5L', price: 8000, img: 'https://i.ibb.co/YBqyS2Z4/uploaded-image.jpg', desc: 'Meva ta’mli salqinlashtiruvchi ichimlik.' },
-      p5: { id: 'p5', category: 'drink', name: 'Sprite 0.5L', price: 8000, img: 'https://i.ibb.co/Kx7d4s33/uploaded-image.jpg', desc: 'Limon va laym ta’mli muzdek ichimlik.' }
+      g1_58: { id: 'g1_58', category: 'garnir', name: 'СтрипБокс', price: 58000, img: 'https://i.ibb.co/bj5YyyzJ/uploaded-image.jpg', desc: 'Куриный' },
+      g2_60: { id: 'g2_60', category: 'garnir', name: 'МитБокс', price: 60000, img: 'https://i.ibb.co/gZJDFRcQ/uploaded-image.jpg', desc: 'Мясной' },
+      g3_35: { id: 'g3_35', category: 'garnir', name: 'Сырные подушки', price: 35000, img: 'https://i.ibb.co/Q79HDdyq/uploaded-image.jpg', desc: 'Хрустящие золотистые подушечки с сырной начинкой, подаются с соусом' },
+      g4_30: { id: 'g4_30', category: 'garnir', name: 'Фри с трюфелем', price: 30000, img: 'https://i.ibb.co/M5Jym5y0/uploaded-image.jpg', desc: 'Хрустящий картофель фри с трюфельным соусом' },
+      g5_25: { id: 'g5_25', category: 'garnir', name: 'Картофель Айдахо', price: 25000, img: 'https://i.ibb.co/fG4LCkQ3/uploaded-image.jpg', desc: 'Румяные дольки картофеля по-деревенски (Айдахо)' },
+      g6_20: { id: 'g6_20', category: 'garnir', name: 'Картофель фри', price: 20000, img: 'https://i.ibb.co/3Y53x7B3/uploaded-image.jpg', desc: 'Хрустящий золотистый картофель фри' }
     };
 
     let cart = JSON.parse(localStorage.getItem('street_dog_cart')) || {};
+    // Menyudan olib tashlangan yoki nomi/narxi o'zgargan taomlarni eski savatdan tozalaymiz
+    Object.keys(cart).forEach(id => {
+      const p = products[id];
+      if (!p || !cart[id] || !(cart[id].count > 0)) { delete cart[id]; return; }
+      cart[id].name = p.name;
+      cart[id].price = p.price;
+    });
     let myOrders = JSON.parse(localStorage.getItem('street_dog_orders')) || [];
     let selectedDelivery = 'delivery'; 
     let selectedPayment = 'Naqd / Karta';
@@ -1147,6 +1198,7 @@
 
       document.getElementById(`tab-${tabName}`).classList.add('active');
       if (tabName === 'orders') refreshOrders();
+      if (tabName === 'profile') loadProfileStats();
       if (element) {
         element.classList.add('active');
       } else {
@@ -1157,7 +1209,7 @@
 
     function openDetail(id) {
       selectedDetailId = id;
-      modalQty = 1;
+      modalQty = 0;
       const item = products[id];
       if(!item) return;
 
@@ -1165,6 +1217,9 @@
       document.getElementById('mPrice').innerText = item.price.toLocaleString() + " so'm";
       document.getElementById('mDesc').innerText = item.desc;
       document.getElementById('mQty').innerText = modalQty;
+      updateModalAddBtn();
+      const inCart = cart[id] ? cart[id].count : 0;
+      document.getElementById('mInCart').innerText = inCart > 0 ? `Savatda: ${inCart} ta` : '';
 
       const imgEl = document.getElementById('mImg');
       imgEl.src = item.img;
@@ -1176,14 +1231,21 @@
       document.getElementById('detailModal').classList.remove('active');
     }
 
+    function updateModalAddBtn() {
+      const btn = document.getElementById('mAddBtn');
+      if (btn) btn.disabled = modalQty < 1;
+    }
+
     function changeModalQty(delta) {
-      if (modalQty + delta >= 1) {
+      if (modalQty + delta >= 0) {
         modalQty += delta;
         document.getElementById('mQty').innerText = modalQty;
+        updateModalAddBtn();
       }
     }
 
     function addToCartFromModal() {
+      if (modalQty < 1) return;
       const item = products[selectedDetailId];
       if (item) {
         changeQuantity(selectedDetailId, item.name, item.price, modalQty);
