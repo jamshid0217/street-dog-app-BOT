@@ -20,15 +20,12 @@
       margin: 0;
       padding: 0;
       overflow-anchor: none; /* savatga qo'shganda scroll sakramasligi uchun */
+      overscroll-behavior-y: none; /* tepaga/pastga tortganda sahifa "suzmasin" */
+      -webkit-text-size-adjust: 100%;
     }
 
     body {
-      background-image: linear-gradient(180deg, rgba(10, 10, 12, 0.55), rgba(10, 10, 12, 0.65)),
-                        url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80');
-      background-position: center;
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-attachment: scroll;
+      background-color: #0a0a0c; /* fon rasmi pastdagi body::before da (qimirlamaydi) */
       color: #ffffff;
       padding: 16px;
       /* ENG MUHIM O'ZGARISH: Oxirgi mahsulotlar to'liq ko'rinishi uchun pastdan joy ochildi */
@@ -42,8 +39,10 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      transform: translateZ(0);
       background-image: linear-gradient(180deg, rgba(10, 10, 12, 0.55), rgba(10, 10, 12, 0.65)),
                         url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80');
       background-position: center;
@@ -158,12 +157,13 @@
 
     .product-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr)); /* uzun nom ustunni kengaytirib, sahifani yon tomonga chiqarib yubormasin */
       gap: 14px;
       margin-bottom: 20px;
     }
 
     .product-card {
+      min-width: 0;
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 20px;
@@ -215,20 +215,25 @@
 
     .product-bottom {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      align-items: stretch;
       margin-top: auto;
-      height: 34px;
-      gap: 4px;
-      flex-wrap: nowrap;
+      gap: 6px;
     }
 
     .product-price {
-      font-size: 11px;
+      font-size: 17px;
       font-weight: 800;
+      line-height: 1.2;
       color: #ff7a00;
       white-space: nowrap;
-      min-width: 0;
+    }
+
+    /* Tugma/hisoblagich doim o'ng tomonda, bir xil balandlikda (kartochka sakramasin) */
+    .product-bottom .add-btn,
+    .product-bottom .quantity-control {
+      align-self: flex-end;
+      min-height: 32px;
     }
 
     .add-btn {
@@ -285,24 +290,29 @@
     /* Savat paneli navigatsiya menyusining roppa-saqich ustiga, ya'ni pastdan boshlanadigan qilindi */
     .cart-bar {
       position: fixed;
-      bottom: 65px; 
-      left: 0;
-      right: 0;
-      background: rgba(24, 24, 31, 0.95);
-      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      bottom: calc(82px + env(safe-area-inset-bottom));
+      left: 14px;
+      right: 14px;
+      border-radius: 22px;
+      background: rgba(28, 28, 36, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       padding: 12px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
       z-index: 100;
-      transform: translateY(200%);
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      backdrop-filter: blur(10px);
+      transform: translate3d(0, 250%, 0);
+      transition: transform 0.25s ease-out; /* oldin "sakrab" chiqadigan edi — qimirlashning sababi shu */
+      will-change: transform;
+      pointer-events: none;
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      backdrop-filter: blur(20px) saturate(160%);
     }
 
     .cart-bar.active {
-      transform: translateY(0);
+      transform: translate3d(0, 0, 0);
+      pointer-events: auto;
     }
 
     .cart-info p {
@@ -330,30 +340,86 @@
     /* Pastki navigatsiya menyusi */
     .bottom-nav {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 65px;
-      background: #121216;
-      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      left: 14px;
+      right: 14px;
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      height: 64px;
+      padding: 4px;
       display: flex;
-      justify-content: space-around;
-      align-items: center;
+      align-items: stretch;
+      border-radius: 32px;
+      /* Shisha effekti: xiralashtirish + yorug'lik */
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04)),
+        rgba(24, 24, 30, 0.38);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow:
+        0 12px 32px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+      touch-action: none;
+      -webkit-touch-callout: none;
       z-index: 101;
-      padding-bottom: env(safe-area-inset-bottom);
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+    }
+
+    /* Barmoq ortidan yuradigan shisha "pufak" */
+    .nav-glass {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 4px;
+      width: 0;
+      pointer-events: none;
+      will-change: transform;
+      transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .bottom-nav.dragging .nav-glass {
+      transition: none; /* surayotganda barmoqqa darhol ergashadi */
+    }
+
+    .nav-glass-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+        rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.28),
+        inset 0 1px 1px rgba(255, 255, 255, 0.55),
+        inset 0 -6px 12px rgba(255, 255, 255, 0.06);
+      transform: scale(1);
+      transition: transform 0.32s cubic-bezier(0.3, 1.25, 0.5, 1), background 0.2s ease;
+    }
+
+    .bottom-nav.pressing .nav-glass-inner {
+      transform: scale(1.16, 1.22);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.14)),
+        rgba(255, 255, 255, 0.1);
     }
 
     .nav-item {
+      flex: 1;
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: #8e8e93;
+      color: #b4b4ba;
       font-size: 11px;
       font-weight: 600;
       gap: 4px;
       cursor: pointer;
-      width: 33%;
+      border-radius: 28px;
+      transition: color 0.2s ease;
     }
 
     .nav-item i {
@@ -361,6 +427,15 @@
     }
 
     .nav-item.active {
+      color: #ff7a00;
+    }
+
+    /* Bosib surayotganda faqat barmoq ostidagi bo'lim yonib turadi */
+    .bottom-nav.pressing .nav-item.active:not(.hover) {
+      color: #b4b4ba;
+    }
+
+    .bottom-nav.pressing .nav-item.hover {
       color: #ff7a00;
     }
 
@@ -772,6 +847,7 @@
     .product-card.sold-out .quantity-control { display: none !important; }
     .product-card.sold-out .product-bottom::after {
       content: "Tugagan";
+      align-self: flex-end;
       color: #ff6b6b;
       font-size: 12px;
       font-weight: 800;
@@ -874,16 +950,17 @@
   </div>
 
   <!-- Bottom Nav (Eng pastdagi menyu) -->
-  <div class="bottom-nav">
-    <div class="nav-item active" id="nav-home" onclick="switchTab('home', this)">
+  <div class="bottom-nav" id="bottomNav">
+    <div class="nav-glass" id="navGlass"><div class="nav-glass-inner"></div></div>
+    <div class="nav-item active" id="nav-home" data-tab="home">
       <i class="fa-solid fa-utensils"></i>
       <span>Menyu</span>
     </div>
-    <div class="nav-item" id="nav-orders" onclick="switchTab('orders', this)">
+    <div class="nav-item" id="nav-orders" data-tab="orders">
       <i class="fa-solid fa-clock-rotate-left"></i>
       <span>Buyurtmalarim</span>
     </div>
-    <div class="nav-item" id="nav-profile" onclick="switchTab('profile', this)">
+    <div class="nav-item" id="nav-profile" data-tab="profile">
       <i class="fa-solid fa-user"></i>
       <span>Profil</span>
     </div>
@@ -978,6 +1055,10 @@
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+    try {
+      // Vertikal surish bilan ilova siljishi yoki yopilib qolishining oldini oladi
+      if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
+    } catch (e) {}
 
     // ==== SERVER MANZILI ====
     // Sayt GitHub Pages'da turganda bot server manzilini havoladagi ?api=... orqali beradi
@@ -1205,7 +1286,105 @@
         const navEl = document.getElementById(`nav-${tabName}`);
         if (navEl) navEl.classList.add('active');
       }
+      if (typeof positionNavGlass === 'function') positionNavGlass();
     }
+
+    // ==================== PASTKI MENYU: SHISHA EFFEKTI ====================
+    // Bosib turib surish mumkin: shisha pufak barmoq ortidan yuradi,
+    // qo'yib yuborganda barmoq ostidagi bo'limga o'tiladi.
+    const NAV_PAD = 4;
+
+    function positionNavGlass() {
+      const nav = document.getElementById('bottomNav');
+      const glass = document.getElementById('navGlass');
+      if (!nav || !glass) return;
+      const items = nav.querySelectorAll('.nav-item');
+      const itemW = (nav.clientWidth - NAV_PAD * 2) / items.length;
+      if (!(itemW > 0)) return;
+      let index = Array.prototype.findIndex.call(items, el => el.classList.contains('active'));
+      if (index < 0) index = 0;
+      glass.style.width = itemW + 'px';
+      glass.style.transform = 'translateX(' + (index * itemW) + 'px)';
+    }
+
+    (function initNavGlass() {
+      const nav = document.getElementById('bottomNav');
+      const glass = document.getElementById('navGlass');
+      if (!nav || !glass) return;
+      const items = Array.prototype.slice.call(nav.querySelectorAll('.nav-item'));
+      let pointerId = null;
+      let hoverIndex = -1;
+
+      function haptic(kind) {
+        try {
+          if (!tg.HapticFeedback) return;
+          if (kind === 'select') tg.HapticFeedback.selectionChanged();
+          else tg.HapticFeedback.impactOccurred('light');
+        } catch (e) {}
+      }
+
+      function follow(clientX) {
+        const rect = nav.getBoundingClientRect();
+        const itemW = (nav.clientWidth - NAV_PAD * 2) / items.length;
+        const x = clientX - rect.left - nav.clientLeft - NAV_PAD;
+        const maxLeft = itemW * (items.length - 1);
+        const left = Math.max(0, Math.min(maxLeft, x - itemW / 2));
+        glass.style.transform = 'translateX(' + left + 'px)';
+
+        const idx = Math.max(0, Math.min(items.length - 1, Math.floor(x / itemW)));
+        if (idx !== hoverIndex) {
+          if (hoverIndex !== -1) haptic('select');
+          hoverIndex = idx;
+          items.forEach((el, i) => el.classList.toggle('hover', i === idx));
+        }
+      }
+
+      function finish(commit) {
+        if (pointerId === null) return;
+        const idx = hoverIndex;
+        pointerId = null;
+        hoverIndex = -1;
+        nav.classList.remove('pressing', 'dragging');
+        items.forEach(el => el.classList.remove('hover'));
+        const target = items[idx];
+        if (commit && target && !target.classList.contains('active')) {
+          switchTab(target.dataset.tab, target);
+        } else {
+          positionNavGlass();
+        }
+      }
+
+      nav.addEventListener('pointerdown', function (e) {
+        if (pointerId !== null) return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        pointerId = e.pointerId;
+        try { nav.setPointerCapture(e.pointerId); } catch (err) {}
+        nav.classList.add('pressing', 'dragging');
+        haptic('light');
+        follow(e.clientX);
+      });
+
+      nav.addEventListener('pointermove', function (e) {
+        if (e.pointerId !== pointerId) return;
+        follow(e.clientX);
+      });
+
+      nav.addEventListener('pointerup', function (e) {
+        if (e.pointerId !== pointerId) return;
+        finish(true);
+      });
+
+      nav.addEventListener('pointercancel', function (e) {
+        if (e.pointerId !== pointerId) return;
+        finish(false);
+      });
+
+      nav.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+      window.addEventListener('resize', positionNavGlass);
+      window.addEventListener('load', positionNavGlass);
+      positionNavGlass();
+    })();
 
     function openDetail(id) {
       selectedDetailId = id;
