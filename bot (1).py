@@ -163,7 +163,7 @@ WEB_APP_URL = ""
 
 # ---- DOIMIY SAYT (bot o'chiq bo'lsa ham menyu ochiladi) ----
 # index.html ni GitHub Pages (yoki Netlify/Cloudflare Pages) ga yuklab, doimiy manzilni shu yerga yozing:
-PERMANENT_SITE_URL = "https://jamshid0217.github.io/streetdog/"
+#   PERMANENT_SITE_URL = "https://jamshid0217.github.io/streetdog/"
 # Bo'sh qoldirsangiz, ilovani bot o'zi (vaqtinchalik cloudflared manzili orqali) ochadi.
 PERMANENT_SITE_URL = ""
 
@@ -385,11 +385,12 @@ def init_db() -> None:
         db().execute("ALTER TABLE orders ADD COLUMN day_no INTEGER")
     except sqlite3.OperationalError:
         pass
-    for col in ("courier_id INTEGER", "courier_name TEXT"):  # eski bazalar uchun: kuryer
+    for col in ("courier_id INTEGER", "courier_name TEXT", "courier_phone TEXT"):  # eski bazalar uchun: kuryer
         try:
             db().execute("ALTER TABLE orders ADD COLUMN " + col)
         except sqlite3.OperationalError:
             pass
+    db().execute("CREATE TABLE IF NOT EXISTS couriers (user_id INTEGER PRIMARY KEY, phone TEXT NOT NULL)")
     try:  # eski bazalar uchun: mijoz izohi ustuni
         db().execute("ALTER TABLE orders ADD COLUMN note TEXT")
     except sqlite3.OperationalError:
@@ -736,7 +737,7 @@ def order_text(order) -> str:
         )
     parts += [
         f"💳 To'lov: {esc(order['payment'])}",
-        *([f"🛵 Kuryer: <b>{esc(order['courier_name'])}</b>"] if order["courier_name"] else []),
+        *([f"🛵 Kuryer: <b>{esc(order['courier_name'])}</b> · {esc(order['courier_phone'] or '')}"] if order["courier_name"] else []),
         *([f"📝 Izoh: <b>{esc(order['note'])}</b>"] if order["note"] else []),
         "",
         "📦 <b>Buyurtma tarkibi:</b>",
@@ -2098,6 +2099,23 @@ async def on_cancel_back_callback(update: Update, context: ContextTypes.DEFAULT_
         await query.edit_message_reply_markup(reply_markup=admin_keyboard(order))
 
 
+async def cmd_telefon(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Kuryer o'z telefon raqamini bir marta saqlaydi: /telefon +998 90 123 45 67"""
+    if not update.message or not update.effective_user:
+        return
+    raw = " ".join(context.args).strip() if context.args else ""
+    digits = re.sub(r"\D", "", raw)
+    if not (9 <= len(digits) <= 15):
+        await update.message.reply_text("Raqamni shunday yozing:\n/telefon +998 90 123 45 67")
+        return
+    phone = f"+{digits}" if len(digits) > 9 else digits
+    db().execute(
+        "INSERT INTO couriers (user_id, phone) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET phone=excluded.phone",
+        (update.effective_user.id, phone),
+    )
+    await update.message.reply_text(f"✅ Saqlandi: {phone}\nEndi kuryerlar guruhida «🛵 Men olaman» tugmasini bosa olasiz.")
+
+
 async def on_courier_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     oid = int(query.data.split(":")[1])
@@ -2106,9 +2124,17 @@ async def on_courier_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer("Bu buyurtma yopilgan.", show_alert=True)
         return
     name = query.from_user.full_name or "Kuryer"
+    row = db().execute("SELECT phone FROM couriers WHERE user_id=?", (query.from_user.id,)).fetchone()
+    if not row:
+        await query.answer(
+            "Avval botga SHAXSIY xabarda telefon raqamingizni yozing:\n/telefon +998 90 123 45 67\nKeyin qayta bosing.",
+            show_alert=True,
+        )
+        return
+    phone = row["phone"]
     cur = db().execute(
-        "UPDATE orders SET courier_id=?, courier_name=? WHERE id=? AND courier_id IS NULL",
-        (query.from_user.id, name, oid),
+        "UPDATE orders SET courier_id=?, courier_name=?, courier_phone=? WHERE id=? AND courier_id IS NULL",
+        (query.from_user.id, name, phone, oid),
     )
     if cur.rowcount == 0:
         await query.answer("Bu buyurtmani boshqa kuryer oldi.", show_alert=True)
@@ -2116,9 +2142,9 @@ async def on_courier_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await query.answer("Buyurtma sizga biriktirildi ✅")
     await refresh_order_messages(context.bot, oid)
-    await safe_send(context.bot, order["user_id"], f"🛵 Kuryer <b>{esc(name)}</b> buyurtmangizni #{order_no(order)} oldi.")
+    await safe_send(context.bot, order["user_id"], f"🛵 Kuryer <b>{esc(name)}</b> buyurtmangizni #{order_no(order)} oldi.\n📞 Kuryer telefoni: {esc(phone)}")
     for admin_id in ADMIN_IDS:
-        await safe_send(context.bot, admin_id, f"🛵 #{order_no(order)} buyurtmani {esc(name)} oldi.")
+        await safe_send(context.bot, admin_id, f"🛵 #{order_no(order)} buyurtmani {esc(name)} ({esc(phone)}) oldi.")
 
 
 async def on_courier_done(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -2348,6 +2374,7 @@ def main():
 
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
+    app.add_handler(CommandHandler("telefon", cmd_telefon))
     app.add_handler(CommandHandler("aloqa", cmd_aloqa))
     app.add_handler(CommandHandler("manzil", cmd_manzil))
     app.add_handler(CommandHandler("ochish", cmd_ochish))

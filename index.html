@@ -919,6 +919,18 @@
     .fav-btn.pop i,.icon-btn.pop i{animation:favPop .35s}
     @keyframes favPop{50%{transform:scale(1.5)}}
     .fly-dot{position:fixed;z-index:100001;width:34px;height:34px;border-radius:50%;background:#ff7a00;display:flex;align-items:center;justify-content:center;font-size:18px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+    /* ---- Tepadagi aylanuvchi banner ---- */
+    .promo-banner{position:relative;overflow:hidden;margin:0 0 14px;border-radius:18px;height:78px;background:linear-gradient(120deg,#ff7a00,#ff3d3d);color:#fff;cursor:pointer;display:none}
+    .promo-banner::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);animation:promoShine 3s infinite}
+    @keyframes promoShine{to{left:130%}}
+    .promo-slide{position:absolute;inset:0;display:flex;align-items:center;gap:12px;padding:10px 14px;transform:translateX(100%);opacity:0;transition:transform .5s ease,opacity .5s ease}
+    .promo-slide.show{transform:translateX(0);opacity:1}
+    .promo-slide.out{transform:translateX(-100%);opacity:0}
+    .promo-slide img{width:56px;height:56px;border-radius:14px;object-fit:cover;flex:none;animation:promoBob 2.2s ease-in-out infinite}
+    @keyframes promoBob{50%{transform:translateY(-3px) rotate(-3deg)}}
+    .promo-slide small{display:block;font-size:11px;font-weight:700;opacity:.9}
+    .promo-slide b{display:block;font-size:15px;line-height:1.2;margin:2px 0}
+    .promo-slide span{font-size:12px;font-weight:700}
   </style>
 </head>
 <body>
@@ -933,6 +945,8 @@
     </div>
 
     <div class="closed-banner" id="closedBanner" style="display:none;"></div>
+
+    <div class="promo-banner" id="promoBanner" onclick="promoOpen()"></div>
 
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass"></i>
@@ -1167,7 +1181,7 @@
 
       var RU = {
         "Xush kelibsiz! 👋": "Добро пожаловать! 👋", "YOQIMLI ISHTAHA TILAYDI": "ПРИЯТНОГО АППЕТИТА",
-        "Sevimli taomingizni qidiring...": "Найдите любимое блюдо...", "Barchasi": "Все", "Sevimli": "Избранное", "🔥 Hit": "🔥 Хит", "Yangi": "Новинка", "Xot-Dog": "Хот-дог",
+        "Sevimli taomingizni qidiring...": "Найдите любимое блюдо...", "Barchasi": "Все", "Sevimli": "Избранное", "🔥 Bugungi hit taomi": "🔥 Хит дня", "🆕 Yangi taom": "🆕 Новинка", "❤️ Siz sevgan taom — bu sizga yoqadi": "❤️ Ваше любимое — вам понравится", "🔥 Hit": "🔥 Хит", "Yangi": "Новинка", "Xot-Dog": "Хот-дог",
         "Burger": "Бургер", "Garnirlar": "Гарниры", "Menyu": "Меню", "Buyurtmalarim": "Мои заказы", "Profil": "Профиль",
         "Mening buyurtmalarim 📦": "Мои заказы 📦", "Mening profilim 👤": "Мой профиль 👤",
         "Sizda hali buyurtmalar yo'q": "У вас пока нет заказов", "Buyurtmalar soni": "Количество заказов",
@@ -1509,6 +1523,7 @@
       if (i >= 0) favs.splice(i, 1); else favs.push(id);
       try { localStorage.setItem('sd_favs', JSON.stringify(favs)); } catch (e) {}
       updateFavUI();
+      buildPromo();
       [document.getElementById('fav-' + id), document.getElementById('mFavBtn')].forEach(el => {
         if (!el) return;
         el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
@@ -1543,6 +1558,36 @@
       } catch (e) {}
     }
 
+    // Tepadagi banner: bugungi hit, yangi va siz sevgan taomlar ketma-ket almashib turadi
+    let promoList = [], promoIdx = -1, promoTimer = null;
+    function promoOpen() { const s = promoList[Math.max(promoIdx, 0)]; if (s) openDetail(s.id); }
+    function buildPromo() {
+      const seen = new Set(); const list = [];
+      const add = (ids, tag) => ids.forEach(id => { if (products[id] && !seen.has(id) && !stopList.has(id)) { seen.add(id); list.push({ id, tag }); } });
+      add([...hitSet], 'hit'); add([...newSet], 'new'); add(favs, 'fav');
+      promoList = list;
+      const el = document.getElementById('promoBanner');
+      if (!el) return;
+      if (!list.length) { el.style.display = 'none'; return; }
+      el.style.display = 'block';
+      if (promoIdx < 0 || promoIdx >= list.length) { promoIdx = -1; promoNext(); }
+      if (!promoTimer) promoTimer = setInterval(promoNext, 3500);
+    }
+    function promoNext() {
+      const el = document.getElementById('promoBanner');
+      if (!el || !promoList.length) return;
+      const prev = el.querySelector('.promo-slide.show');
+      promoIdx = (promoIdx + 1) % promoList.length;
+      const s = promoList[promoIdx], p = products[s.id];
+      const label = s.tag === 'hit' ? "🔥 Bugungi hit taomi" : s.tag === 'new' ? '🆕 Yangi taom' : "❤️ Siz sevgan taom — bu sizga yoqadi";
+      const d = document.createElement('div');
+      d.className = 'promo-slide';
+      d.innerHTML = '<img src="' + p.img + '" alt=""><div><small>' + label + '</small><b>' + p.name + '</b><span>' + p.price.toLocaleString() + " so'm</span></div>";
+      el.appendChild(d);
+      requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('show')));
+      if (prev) { prev.classList.remove('show'); prev.classList.add('out'); setTimeout(() => prev.remove(), 600); }
+    }
+
     function renderProducts() {
       const grid = document.getElementById('productGrid');
       let html = '';
@@ -1573,6 +1618,7 @@
       grid.innerHTML = html;
       renderBadges();
       updateFavUI();
+      buildPromo();
     }
 
     function saveCartToStorage() {
@@ -1965,7 +2011,7 @@
         shopClosed = !data.open;
         shopMessage = data.message || '';
         stopList = new Set(Array.isArray(data.stoplist) ? data.stoplist : []);
-        hitSet = new Set(data.hits || []); newSet = new Set(data.new || []); renderBadges();
+        hitSet = new Set(data.hits || []); newSet = new Set(data.new || []); renderBadges(); buildPromo();
         if (Number.isFinite(data.delivery_fee)) { deliveryFee = data.delivery_fee; updateCheckoutSummary(); }
         serverOffline = false;
         applyShopStatus();
