@@ -879,6 +879,46 @@
       font-size: 12px;
       font-weight: 800;
     }
+
+    /* ---- Buyurtma kuzatuvi ---- */
+    .track{display:flex;align-items:flex-start;margin:6px 0 12px}
+    .track-step{flex:1;text-align:center;position:relative;font-size:11px;color:#999}
+    .track-step::before{content:'';position:absolute;top:11px;left:-50%;width:100%;height:3px;background:#e4e4e4;z-index:0}
+    .track-step:first-child::before{display:none}
+    .track-dot{position:relative;z-index:1;width:24px;height:24px;margin:0 auto 4px;border-radius:50%;background:#e4e4e4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px}
+    .track-step.done{color:#2e9e4f}.track-step.done::before{background:#2e9e4f}
+    .track-step.done .track-dot{background:#2e9e4f}
+    .track-step.now{color:#ff7a00;font-weight:700}.track-step.now::before{background:#ff7a00}
+    .track-step.now .track-dot{background:#ff7a00;animation:trackPulse 1.4s infinite}
+    @keyframes trackPulse{0%{box-shadow:0 0 0 0 rgba(255,122,0,.5)}100%{box-shadow:0 0 0 10px rgba(255,122,0,0)}}
+    .reorder-btn{width:100%;margin-top:10px;padding:11px;border:2px solid #ff7a00;background:transparent;color:#ff7a00;border-radius:12px;font-weight:700;font-size:14px}
+    .note-input{resize:none;min-height:56px;font-family:inherit}
+    /* ---- Muvaffaqiyat oynasi ---- */
+    .success-overlay{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+    .success-overlay.show{opacity:1;pointer-events:auto}
+    .success-box{background:#fff;color:#222;border-radius:24px;padding:28px 24px;text-align:center;max-width:300px;transform:scale(.7);transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
+    .success-overlay.show .success-box{transform:scale(1)}
+    .success-check{width:76px;height:76px;margin:0 auto 14px;border-radius:50%;background:#2e9e4f;color:#fff;font-size:38px;display:flex;align-items:center;justify-content:center}
+    .success-box h3{margin:0 0 6px;font-size:19px}.success-box p{margin:0 0 16px;font-size:14px;color:#666}
+    .success-box button{width:100%;padding:12px;border:0;border-radius:12px;background:#ff7a00;color:#fff;font-weight:700;font-size:15px}
+    .confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:100000;pointer-events:none;animation:confFall linear forwards}
+    @keyframes confFall{to{transform:translateY(105vh) rotate(720deg);opacity:.9}}
+    html[data-lang="ru"] .product-card.sold-out .product-bottom::after { content: "Нет в наличии"; }
+    .lang-switch{display:flex;gap:6px}
+    .lang-switch button{border:2px solid #ff7a00;background:transparent;color:#ff7a00;border-radius:10px;padding:5px 10px;font-weight:700;font-size:13px}
+    .lang-switch button.on{background:#ff7a00;color:#fff}
+    /* ---- Belgilar, sevimlilar, skeleton, uchib tushish ---- */
+    .product-img-box{position:relative}
+    .product-img-box.sk{background:linear-gradient(100deg,rgba(255,255,255,.06) 30%,rgba(255,255,255,.22) 50%,rgba(255,255,255,.06) 70%);background-size:300% 100%;animation:skShine 1.2s infinite linear}
+    @keyframes skShine{from{background-position:100% 0}to{background-position:-100% 0}}
+    .badge-slot{position:absolute;top:6px;left:6px;display:flex;gap:4px;z-index:2}
+    .badge{font-size:10px;font-weight:800;padding:3px 7px;border-radius:8px;color:#fff;background:#ff4d4d}
+    .badge.new{background:#2e9e4f}
+    .fav-btn{position:absolute;top:5px;right:5px;z-index:2;width:28px;height:28px;border:0;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center}
+    .fav-btn.on,.icon-btn.on i{color:#ff4d4d!important}
+    .fav-btn.pop i,.icon-btn.pop i{animation:favPop .35s}
+    @keyframes favPop{50%{transform:scale(1.5)}}
+    .fly-dot{position:fixed;z-index:100001;width:34px;height:34px;border-radius:50%;background:#ff7a00;display:flex;align-items:center;justify-content:center;font-size:18px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
   </style>
 </head>
 <body>
@@ -911,6 +951,10 @@
       <div class="cat-btn" onclick="filterCategory('burger', this)">
         <i class="fa-solid fa-burger"></i>
         <span>Burger</span>
+      </div>
+      <div class="cat-btn" onclick="filterCategory('fav', this)">
+        <i class="fa-solid fa-heart"></i>
+        <span>Sevimli</span>
       </div>
       <div class="cat-btn" onclick="filterCategory('garnir', this)">
         <i class="fa-solid fa-bowl-food"></i>
@@ -960,6 +1004,13 @@
           <span>Urganch</span>
         </div>
         <div class="profile-menu-item">
+          <span><i class="fa-solid fa-language" style="color:#ff7a00; margin-right:8px;"></i> Til / Язык</span>
+          <span class="lang-switch">
+            <button id="lang-uz" onclick="setLang('uz')">UZ</button>
+            <button id="lang-ru" onclick="setLang('ru')">RU</button>
+          </span>
+        </div>
+        <div class="profile-menu-item">
           <span><i class="fa-solid fa-phone" style="color:#ff7a00; margin-right:8px;"></i> Aloqa</span>
           <span>+998 91 966 40 40</span>
         </div>
@@ -997,7 +1048,7 @@
   <div class="detail-modal" id="detailModal">
     <div class="detail-header">
       <div class="icon-btn" onclick="closeDetail()"><i class="fa-solid fa-chevron-left"></i></div>
-      <div class="icon-btn"><i class="fa-solid fa-heart" style="color:#ff4d4d"></i></div>
+      <div class="icon-btn" id="mFavBtn" onclick="toggleFav(selectedDetailId)"><i class="fa-solid fa-heart" style="color:#999"></i></div>
     </div>
 
     <div class="detail-img-box">
@@ -1061,6 +1112,11 @@
       </div>
 
       <div class="form-group">
+        <label>Izoh (ixtiyoriy)</label>
+        <textarea id="noteInput" class="form-input note-input" maxlength="200" placeholder="Masalan: piyozsiz, achchiq sous ko'proq"></textarea>
+      </div>
+
+      <div class="form-group">
         <label>To'lov usuli</label>
         <div class="option-grid">
           <div class="option-card active" id="pay-cash" onclick="selectPaymentMethod('Naqd / Karta')">
@@ -1079,6 +1135,111 @@
       <button class="submit-order-btn" id="submitOrderBtn" onclick="confirmOrder()">Tasdiqlash va Yuborish</button>
     </div>
   </div>
+
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-box">
+      <div class="success-check">✓</div>
+      <h3 id="successTitle">Buyurtma qabul qilindi 🎉</h3>
+      <p>Holatini «Buyurtmalarim» bo'limida kuzatib borishingiz mumkin.</p>
+      <button onclick="closeSuccess()">Zo'r!</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== TIL: O'zbekcha / Русский =====
+    (function () {
+      var tgw = window.Telegram && window.Telegram.WebApp;
+      var LANG = localStorage.getItem('sd_lang');
+      if (!LANG) {
+        var lc = tgw && tgw.initDataUnsafe && tgw.initDataUnsafe.user && tgw.initDataUnsafe.user.language_code;
+        LANG = lc === 'ru' ? 'ru' : 'uz';
+      }
+      window.LANG = LANG;
+      document.documentElement.setAttribute('data-lang', LANG);
+      window.setLang = function (l) { localStorage.setItem('sd_lang', l); location.reload(); };
+      var mark = function () {
+        var u = document.getElementById('lang-uz'), r = document.getElementById('lang-ru');
+        if (u && r) { u.classList.toggle('on', LANG === 'uz'); r.classList.toggle('on', LANG === 'ru'); }
+      };
+      document.addEventListener('DOMContentLoaded', mark);
+      if (LANG !== 'ru') return;
+      document.documentElement.lang = 'ru';
+
+      var RU = {
+        "Xush kelibsiz! 👋": "Добро пожаловать! 👋", "YOQIMLI ISHTAHA TILAYDI": "ПРИЯТНОГО АППЕТИТА",
+        "Sevimli taomingizni qidiring...": "Найдите любимое блюдо...", "Barchasi": "Все", "Sevimli": "Избранное", "🔥 Hit": "🔥 Хит", "Yangi": "Новинка", "Xot-Dog": "Хот-дог",
+        "Burger": "Бургер", "Garnirlar": "Гарниры", "Menyu": "Меню", "Buyurtmalarim": "Мои заказы", "Profil": "Профиль",
+        "Mening buyurtmalarim 📦": "Мои заказы 📦", "Mening profilim 👤": "Мой профиль 👤",
+        "Sizda hali buyurtmalar yo'q": "У вас пока нет заказов", "Buyurtmalar soni": "Количество заказов",
+        "Shahar": "Город", "Urganch": "Ургенч", "Aloqa": "Связь", "Mijoz": "Клиент",
+        "Buyurtma berish": "Оформить заказ", "Savatga qo'shish": "Добавить в корзину",
+        "Mazzali va yangi uzilgan masalliqlardan tayyorlangan maxsus taom.": "Особое блюдо из вкусных и свежих ингредиентов.",
+        "Buyurtmani rasmiylashtirish": "Оформление заказа", "Yetkazib berish turi": "Способ получения",
+        "Dostavka": "Доставка", "Olib ketish": "Самовывоз", "Yetkazib berish manzili": "Адрес доставки",
+        "Telefon raqamingiz": "Ваш телефон", "Izoh (ixtiyoriy)": "Комментарий (необязательно)",
+        "To'lov usuli": "Способ оплаты", "Naqd / Karta": "Наличные / Карта", "Tasdiqlash va Yuborish": "Подтвердить и отправить",
+        "Yuborilmoqda...": "Отправка...", "Taomlar": "Блюда", "Bepul": "Бесплатно", "Jami": "Итого", "Jami summa:": "Итого:",
+        "🛵 Dostavka": "🛵 Доставка", "Buyurtma qabul qilindi 🎉": "Заказ принят 🎉", "Zo'r!": "Отлично!",
+        "Holatini «Buyurtmalarim» bo'limida kuzatib borishingiz mumkin.": "Следить за статусом можно в разделе «Мои заказы».",
+        "🔁 Yana shuni buyurtma berish": "🔁 Заказать снова",
+        "Qabul qilinishi kutilmoqda ⏳": "Ожидает подтверждения ⏳", "Tayyorlanmoqda 👨‍🍳": "Готовится 👨‍🍳", "Tayyor 🍽": "Готов 🍽",
+        "Yo'lda 🛵": "В пути 🛵", "Yakunlandi ✔️": "Завершён ✔️", "Bekor qilindi ❌": "Отменён ❌", "Tayyorlanmoqda... ⏳": "Готовится... ⏳",
+        "Yuborildi": "Отправлен", "Tayyorlanmoqda": "Готовится", "Tayyor": "Готов", "Yo'lda": "В пути", "Yakunlandi": "Завершён",
+        "Joylashuvni aniqlash": "Определить местоположение", "Masalan: piyozsiz, achchiq sous ko'proq": "Например: без лука, острого соуса побольше",
+        "Urganch shahri, Al-Xorazmiy ko'chasi 12-uy": "г. Ургенч, ул. Аль-Хорезми, д. 12",
+        "Afsuski, bu taom hozircha tugagan.": "К сожалению, это блюдо закончилось.",
+        "Bu taomlar hozir mavjud emas.": "Этих блюд сейчас нет в наличии.",
+        "Iltimos, telefon raqamingizni kiriting!": "Пожалуйста, введите номер телефона!",
+        "Iltimos, yetkazib berish manzilini kiriting!": "Пожалуйста, введите адрес доставки!",
+        "Savat bo'sh. Avval taom tanlang.": "Корзина пуста. Сначала выберите блюдо.",
+        "Joylashuvingiz muvaffaqiyatli aniqlandi!": "Местоположение успешно определено!",
+        "Hozir buyurtma qabul qilinmaydi. Iltimos, keyinroq urinib ko'ring.": "Сейчас заказы не принимаются. Попробуйте позже.",
+        "⛔ Hozir buyurtma qabul qilinmaydi. Iltimos, keyinroq urinib ko'ring.": "⛔ Сейчас заказы не принимаются. Попробуйте позже.",
+        "⚠️ Hozir buyurtma qabul qilish ishlamayapti. Menyuni ko'rishingiz mumkin. Buyurtma berish uchun keyinroq urinib ko'ring yoki botdagi «Menyu» tugmasi orqali oching.": "⚠️ Приём заказов сейчас недоступен. Меню можно смотреть. Попробуйте позже или откройте через кнопку «Меню» в боте.",
+        "Telefon raqami noto'g'ri. Masalan: +998 90 123 45 67": "Неверный номер телефона. Например: +998 90 123 45 67",
+        "Juda ko'p buyurtma yuborildi. Birozdan keyin urinib ko'ring.": "Слишком много заказов. Попробуйте чуть позже.",
+        "Serverda xatolik yuz berdi. Qaytadan urinib ko'ring.": "Ошибка сервера. Попробуйте ещё раз.",
+        "Xatolik yuz berdi, qaytadan urinib ko'ring.": "Произошла ошибка, попробуйте ещё раз.",
+        "Hozir buyurtma qabul qilish ishlamayapti. Birozdan keyin urinib ko'ring yoki botdagi «Menyu» tugmasi orqali oching.": "Приём заказов сейчас недоступен. Попробуйте позже или откройте через кнопку «Меню» в боте."
+      };
+      var RX = [
+        [/(\d) so'm/g, "$1 сум"], [/^(\d+) ta mahsulot$/, "$1 шт."], [/^Savatda: (\d+) ta$/, "В корзине: $1 шт."],
+        [/^(\d+) ta$/, "$1 шт."], [/^Salom, (.*)! 👋$/, "Привет, $1! 👋"],
+        [/^Buyurtma #(\d+) qabul qilindi 🎉$/, "Заказ #$1 принят 🎉"], [/^Buyurtma (#?\d+) \((.*)\)$/, "Заказ $1 ($2)"],
+        [/Hozir yopiqmiz\. Ish vaqti: (.*)$/, "Сейчас закрыто. Время работы: $1"],
+        [/taomlar hozircha tugagan: (.*?)\. Iltimos, savatdan olib tashlang\./, "блюда закончились: $1. Уберите их из корзины."],
+        [/^Afsuski, quyidagi (.*)$/, "К сожалению, $1"]
+      ];
+      function tr(s) {
+        var t = s.trim();
+        if (!t || !/[A-Za-z]/.test(t)) return s;
+        var out = RU[t];
+        if (out === undefined) { out = t; RX.forEach(function (r) { out = out.replace(r[0], r[1]); }); }
+        return out === t ? s : s.replace(t, out);
+      }
+      function walk(node) {
+        if (node.nodeType === 3) { var n = tr(node.nodeValue); if (n !== node.nodeValue) node.nodeValue = n; return; }
+        if (node.nodeType !== 1 || /^(SCRIPT|STYLE|TEXTAREA)$/.test(node.tagName)) return;
+        ['placeholder', 'title'].forEach(function (a) {
+          var v = node.getAttribute(a); if (v) { var n2 = tr(v); if (n2 !== v) node.setAttribute(a, n2); }
+        });
+        for (var c = node.firstChild; c; c = c.nextSibling) walk(c);
+      }
+      var origAlert = window.alert.bind(window);
+      window.alert = function (m) { origAlert(tr(String(m))); };
+      function start() {
+        walk(document.body);
+        new MutationObserver(function (ms) {
+          ms.forEach(function (m) {
+            if (m.type === 'characterData') walk(m.target);
+            else m.addedNodes.forEach(walk);
+          });
+        }).observe(document.body, { childList: true, characterData: true, subtree: true });
+        mark();
+      }
+      if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+    })();
+  </script>
 
   <script>
     const tg = window.Telegram.WebApp;
@@ -1246,6 +1407,63 @@
       cancelled: 'Bekor qilindi ❌'
     };
 
+    const TRACK_STEPS = [['new','🕒','Yuborildi'],['accepted','👨‍🍳','Tayyorlanmoqda'],['ready','🍽','Tayyor'],['onway','🛵',"Yo'lda"],['done','✔️','Yakunlandi']];
+    function trackHtml(order, isDelivery) {
+      if (order.status === 'cancelled') return '';
+      const steps = TRACK_STEPS.filter(s => isDelivery || s[0] !== 'onway');
+      const idx = Math.max(0, steps.findIndex(s => s[0] === order.status));
+      return '<div class="track">' + steps.map((s, i) =>
+        '<div class="track-step ' + (i < idx || order.status === 'done' ? 'done' : (i === idx ? 'now' : '')) + '">' +
+        '<div class="track-dot">' + (i < idx || order.status === 'done' ? '✓' : s[1]) + '</div>' + s[2] + '</div>').join('') + '</div>';
+    }
+    function reorder(i) {
+      const o = myOrders[i];
+      if (!o) return;
+      let added = 0;
+      o.items.forEach(it => {
+        const p = products[it.id];
+        if (!p || stopList.has(it.id)) return;
+        cart[it.id] = { id: it.id, name: p.name, price: p.price, count: it.count };
+        added++;
+      });
+      if (!added) { alert("Bu taomlar hozir mavjud emas."); return; }
+      saveCartToStorage();
+      Object.keys(products).forEach(id => updateProductUI(id));
+      updateCartBar();
+      switchTab('home', null);
+      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      openCheckoutModal();
+    }
+    function showSuccess(no) {
+      document.getElementById('successTitle').innerText = 'Buyurtma #' + no + ' qabul qilindi 🎉';
+      document.getElementById('successOverlay').classList.add('show');
+      const colors = ['#ff7a00','#2e9e4f','#ffcc00','#ff4d4d','#3b82f6'];
+      for (let i = 0; i < 60; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.background = colors[i % colors.length];
+        c.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
+        c.style.animationDelay = (Math.random() * .4) + 's';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 4000);
+      }
+      if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    }
+    function closeSuccess() {
+      document.getElementById('successOverlay').classList.remove('show');
+      switchTab('orders', null);
+    }
+    // Oxirgi telefon, manzil va to'lov usulini eslab qolish
+    function loadSavedCheckout() {
+      try {
+        const s = JSON.parse(localStorage.getItem('street_dog_checkout') || '{}');
+        if (s.phone) document.getElementById('phoneInput').value = s.phone;
+        if (s.address) document.getElementById('addressInput').value = s.address;
+        if (s.payment === 'Click / Payme') selectPaymentMethod('Click / Payme');
+      } catch (e) {}
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       renderProducts();
       Object.keys(cart).forEach(id => updateProductUI(id));
@@ -1267,14 +1485,74 @@
       }
     });
 
+    let hitSet = new Set(), newSet = new Set();
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem('sd_favs') || '[]'); } catch (e) {}
+    function renderBadges() {
+      Object.keys(products).forEach(id => {
+        const el = document.getElementById('bd-' + id);
+        if (!el) return;
+        el.innerHTML = (hitSet.has(id) ? '<span class="badge">🔥 Hit</span>' : '') + (newSet.has(id) ? '<span class="badge new">Yangi</span>' : '');
+      });
+    }
+    function updateFavUI() {
+      Object.keys(products).forEach(id => {
+        const b = document.getElementById('fav-' + id);
+        if (b) b.classList.toggle('on', favs.includes(id));
+      });
+      const m = document.getElementById('mFavBtn');
+      if (m) m.classList.toggle('on', favs.includes(selectedDetailId));
+    }
+    function toggleFav(id) {
+      if (!id || !products[id]) return;
+      const i = favs.indexOf(id);
+      if (i >= 0) favs.splice(i, 1); else favs.push(id);
+      try { localStorage.setItem('sd_favs', JSON.stringify(favs)); } catch (e) {}
+      updateFavUI();
+      [document.getElementById('fav-' + id), document.getElementById('mFavBtn')].forEach(el => {
+        if (!el) return;
+        el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+      });
+      if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      if (currentCategory === 'fav') applyFilters();
+    }
+    function flyToCart(id) {
+      try {
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        const modalOpen = document.getElementById('detailModal').classList.contains('active');
+        const src = modalOpen ? document.getElementById('mAddBtn')
+          : [document.getElementById('btn-' + id), document.getElementById('ctrl-' + id)].find(e => e && e.offsetParent);
+        const bar = document.getElementById('cartBar');
+        if (!src || !bar) return;
+        setTimeout(() => {
+          const a = src.getBoundingClientRect(), t = bar.getBoundingClientRect();
+          if (!t.width) return;
+          const dot = document.createElement('div');
+          dot.className = 'fly-dot';
+          dot.textContent = ({ hotdog: '🌭', burger: '🍔', garnir: '🍟' })[products[id].category] || '🍽';
+          dot.style.left = (a.left + a.width / 2 - 17) + 'px';
+          dot.style.top = (a.top + a.height / 2 - 17) + 'px';
+          document.body.appendChild(dot);
+          const dx = t.left + 40 - (a.left + a.width / 2), dy = t.top + t.height / 2 - (a.top + a.height / 2);
+          dot.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(.35)`, opacity: .5 }],
+            { duration: 650, easing: 'cubic-bezier(.5,0,.75,.4)' }).onfinish = () => {
+            dot.remove();
+            bar.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.04)' }, { transform: 'scale(1)' }], { duration: 250 });
+          };
+        }, 30);
+      } catch (e) {}
+    }
+
     function renderProducts() {
       const grid = document.getElementById('productGrid');
       let html = '';
       Object.values(products).forEach(item => {
         html += `
           <div class="product-card" data-category="${item.category}" id="card-${item.id}" onclick="openDetail('${item.id}')">
-            <div class="product-img-box">
-              <img class="product-img" src="${item.img}" alt="${item.name}">
+            <div class="product-img-box sk">
+              <span class="badge-slot" id="bd-${item.id}"></span>
+              <button class="fav-btn" id="fav-${item.id}" onclick="event.stopPropagation(); toggleFav('${item.id}')"><i class="fa-solid fa-heart"></i></button>
+              <img class="product-img" src="${item.img}" alt="${item.name}" onload="this.parentNode.classList.remove('sk')" onerror="this.parentNode.classList.remove('sk')">
             </div>
             <div class="product-name">${item.name}</div>
             <div class="product-desc">${item.desc}</div>
@@ -1293,6 +1571,8 @@
         `;
       });
       grid.innerHTML = html;
+      renderBadges();
+      updateFavUI();
     }
 
     function saveCartToStorage() {
@@ -1458,6 +1738,7 @@
       const imgEl = document.getElementById('mImg');
       imgEl.src = item.img;
 
+      updateFavUI();
       document.getElementById('detailModal').classList.add('active');
     }
 
@@ -1506,6 +1787,7 @@
       saveCartToStorage();
       updateProductUI(id);
       updateCartBar();
+      if (delta > 0) flyToCart(id);
 
       // Scroll joyi o'zgarmasin (pastda tursa, pastda qolsin)
       window.scrollTo(0, savedScroll);
@@ -1573,11 +1855,16 @@
     }
 
     function openCheckoutModal() {
+      if (serverOffline) {
+        alert("Hozir buyurtma qabul qilish ishlamayapti. Birozdan keyin urinib ko'ring yoki botdagi «Menyu» tugmasi orqali oching.");
+        return;
+      }
       if (shopClosed) {
         alert(shopMessage || "Hozir buyurtma qabul qilinmaydi. Iltimos, keyinroq urinib ko'ring.");
         return;
       }
       updateCheckoutSummary();
+      loadSavedCheckout();
       document.getElementById('checkoutModal').classList.add('active');
     }
 
@@ -1678,6 +1965,7 @@
         shopClosed = !data.open;
         shopMessage = data.message || '';
         stopList = new Set(Array.isArray(data.stoplist) ? data.stoplist : []);
+        hitSet = new Set(data.hits || []); newSet = new Set(data.new || []); renderBadges();
         if (Number.isFinite(data.delivery_fee)) { deliveryFee = data.delivery_fee; updateCheckoutSummary(); }
         serverOffline = false;
         applyShopStatus();
@@ -1691,7 +1979,7 @@
     function applyShopStatus() {
       const banner = document.getElementById('closedBanner');
       if (serverOffline) {
-        banner.innerText = "⚠️ Hozir buyurtma qabul qilish ishlamayapti. Menyuni ko'rishingiz mumkin, buyurtma berish uchun keyinroq urinib ko'ring.";
+        banner.innerText = "⚠️ Hozir buyurtma qabul qilish ishlamayapti. Menyuni ko'rishingiz mumkin. Buyurtma berish uchun keyinroq urinib ko'ring yoki botdagi «Menyu» tugmasi orqali oching.";
         banner.style.display = 'block';
       } else if (shopClosed) {
         banner.innerText = '⛔ ' + (shopMessage || "Hozir buyurtma qabul qilinmaydi. Iltimos, keyinroq urinib ko'ring.");
@@ -1804,14 +2092,16 @@
         delivery: selectedDelivery,
         address: selectedDelivery === 'delivery' ? address : '',
         location: (selectedDelivery === 'delivery' && userLocation) ? userLocation : null,
-        payment: selectedPayment
+        payment: selectedPayment,
+        note: document.getElementById('noteInput').value.trim().slice(0, 200)
       };
 
       try {
         const data = await apiRequest('/api/order', 'POST', payload);
 
         const newOrder = {
-          id: '#' + data.order_id,
+          id: '#' + (data.order_no || data.order_id),
+          isDelivery: selectedDelivery === 'delivery',
           serverId: data.order_id,
           status: 'new',
           date: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
@@ -1831,8 +2121,10 @@
         updateCartBar();
         pendingClientId = null;
 
+        try { localStorage.setItem('street_dog_checkout', JSON.stringify({ phone: phone, address: address, payment: selectedPayment })); } catch (e) {}
+        document.getElementById('noteInput').value = '';
         closeCheckoutModal();
-        switchTab('orders', null);
+        showSuccess(data.order_no || data.order_id);
       } catch (err) {
         console.error(err);
         // Do'kon yopilib qolgan yoki taom tugagan bo'lsa, holatni yangilaymiz
@@ -1862,7 +2154,7 @@
       }
 
       let html = "";
-      myOrders.forEach(order => {
+      myOrders.forEach((order, orderIdx) => {
         let itemsHtml = "";
         order.items.forEach(item => {
           const prodInfo = products[item.id] || {};
@@ -1901,6 +2193,7 @@
               <span>Buyurtma ${order.id} (${order.date})</span>
               <span class="order-status">${STATUS_LABELS[order.status] || 'Tayyorlanmoqda... ⏳'}</span>
             </div>
+            ${trackHtml(order, order.isDelivery !== false && order.deliveryFee > 0)}
             <ul class="order-items-list">
               ${itemsHtml}
             </ul>
@@ -1908,6 +2201,7 @@
               <span>Jami summa:</span>
               <span>${order.totalPrice.toLocaleString()} so'm</span>
             </div>
+            <button class="reorder-btn" onclick="reorder(${orderIdx})">🔁 Yana shuni buyurtma berish</button>
           </div>
         `;
       });
@@ -1941,7 +2235,7 @@
         const name = card.querySelector('.product-name').innerText.toLowerCase();
         const desc = card.querySelector('.product-desc').innerText.toLowerCase();
 
-        const matchesCategory = (currentCategory === 'all' || cardCat === currentCategory);
+        const matchesCategory = currentCategory === 'all' || (currentCategory === 'fav' ? favs.includes(card.id.replace('card-', '')) : cardCat === currentCategory);
         const matchesSearch = (name.includes(searchValue) || desc.includes(searchValue));
 
         if (matchesCategory && matchesSearch) {

@@ -55,6 +55,8 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
+    MessageHandler,
+    filters,
 )
 from telegram.request import HTTPXRequest
 
@@ -129,7 +131,7 @@ COURIER_CHAT_ID = -5491727953  # kuryerlar guruhi ID si (ixtiyoriy)
 
 CONTACT_PHONE = '+998 91 966 40 40'
 CAFE_ADDRESS = 'Urganch shahri'
-WORK_HOURS = '10:00 - 23:00'
+WORK_HOURS = '24/7 (har kuni, kechayu-kunduz)'
 CAFE_LAT = None  # kafe lokatsiyasi (ixtiyoriy)
 CAFE_LON = None
 
@@ -146,6 +148,10 @@ DELIVERY_FEE = 10000  # dostavka narxi (so'm), taxminan 5 km gacha. Olib ketishd
 
 # ---- SMENA HISOBOTI ----
 COMMISSION_PERCENT = 5          # savdodan sizning ulushingiz (foiz)
+NEW_PRODUCTS = []               # "Yangi" belgisi qo'yiladigan taom kodlari, masalan ['b5_75', 'g3_35']
+HIT_MIN_SOLD = 3                # 30 kunda kamida shuncha dona sotilgan eng yaxshi 5 ta taom "Hit" bo'ladi
+NEW_ORDER_ALERT_MIN = 10        # yangi buyurtma shuncha daqiqa qabul qilinmasa, adminga ogohlantirish
+AUTO_SCHEDULE = False           # WORK_HOURS bo'yicha o'zi ochiladi/yopiladi (qo'lda /ochish /yopish keyingi ochilish/yopilishgacha ishlaydi)
 SMENA_HISOBOT_VAQTI = "23:00"   # hisobot har kuni shu vaqtda o'zi yuboriladi (SS:DD)
 HISOBOT_IDS = []                # hisobot kimga borsin (Telegram ID). Bo'sh bo'lsa — ADMIN_IDS ga
 REPORT_IDS = HISOBOT_IDS or ADMIN_IDS
@@ -155,9 +161,20 @@ REPORT_IDS = HISOBOT_IDS or ADMIN_IDS
 # bo'lsa, shu yerga yozing: "https://sizning-domen.uz"
 WEB_APP_URL = ""
 
+# ---- DOIMIY SAYT (bot o'chiq bo'lsa ham menyu ochiladi) ----
+# index.html ni GitHub Pages (yoki Netlify/Cloudflare Pages) ga yuklab, doimiy manzilni shu yerga yozing:
+PERMANENT_SITE_URL = "https://jamshid0217.github.io/streetdog/"
+# Bo'sh qoldirsangiz, ilovani bot o'zi (vaqtinchalik cloudflared manzili orqali) ochadi.
+PERMANENT_SITE_URL = ""
+
 PORT = 8080
 HOST = "127.0.0.1"  # faqat shu kompyuter ichida; tashqariga cloudflared olib chiqadi
 ALLOWED_ORIGINS = ["https://jamshid0217.github.io"]  # ilova serverdan ochilgani uchun endi muhim emas
+if PERMANENT_SITE_URL:  # doimiy saytdan kelgan so'rovlarga ruxsat (CORS)
+    from urllib.parse import urlsplit as _us
+    _p = _us(PERMANENT_SITE_URL)
+    if _p.scheme and _p.netloc and f"{_p.scheme}://{_p.netloc}" not in ALLOWED_ORIGINS:
+        ALLOWED_ORIGINS.append(f"{_p.scheme}://{_p.netloc}")
 DB_PATH = str(BASE_DIR / "street_dog.db")  # buyurtmalar bazasi — o'zi yaratiladi
 
 # O'zbekiston vaqti (UTC+5, yozgi/qishki vaqt yo'q)
@@ -368,6 +385,15 @@ def init_db() -> None:
         db().execute("ALTER TABLE orders ADD COLUMN day_no INTEGER")
     except sqlite3.OperationalError:
         pass
+    for col in ("courier_id INTEGER", "courier_name TEXT"):  # eski bazalar uchun: kuryer
+        try:
+            db().execute("ALTER TABLE orders ADD COLUMN " + col)
+        except sqlite3.OperationalError:
+            pass
+    try:  # eski bazalar uchun: mijoz izohi ustuni
+        db().execute("ALTER TABLE orders ADD COLUMN note TEXT")
+    except sqlite3.OperationalError:
+        pass
     try:  # eski bazalar uchun: dostavka haqi ustuni
         db().execute("ALTER TABLE orders ADD COLUMN delivery_fee INTEGER NOT NULL DEFAULT 0")
     except sqlite3.OperationalError:
@@ -433,7 +459,7 @@ def mark_blocked(user_id: int) -> None:
 
 
 # ---- buyurtmalar ----
-def create_order(user: dict, client_id, phone, delivery, address, lat, lon, payment, items, total, delivery_fee=0):
+def create_order(user: dict, client_id, phone, delivery, address, lat, lon, payment, items, total, delivery_fee=0, note=None):
     """(order_id, total, yangi_yaratildimi) qaytaradi."""
     conn = db()
     uid = user["id"]
@@ -447,8 +473,8 @@ def create_order(user: dict, client_id, phone, delivery, address, lat, lon, paym
     day_no = next_order_no(now)  # hisoblash va yozish orasida await yo'q — raqamlar takrorlanmaydi
     cur = conn.execute(
         "INSERT INTO orders (client_id, user_id, username, full_name, phone, delivery_type, "
-        "address, lat, lon, payment, items_json, total, status, created_at, updated_at, day_no, delivery_fee) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?)",
+        "address, lat, lon, payment, items_json, total, status, created_at, updated_at, day_no, delivery_fee, note) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?)",
         (
             client_id,
             uid,
@@ -466,6 +492,7 @@ def create_order(user: dict, client_id, phone, delivery, address, lat, lon, paym
             now,
             day_no,
             delivery_fee,
+            note,
         ),
     )
     return cur.lastrowid, total, True
@@ -709,6 +736,8 @@ def order_text(order) -> str:
         )
     parts += [
         f"💳 To'lov: {esc(order['payment'])}",
+        *([f"🛵 Kuryer: <b>{esc(order['courier_name'])}</b>"] if order["courier_name"] else []),
+        *([f"📝 Izoh: <b>{esc(order['note'])}</b>"] if order["note"] else []),
         "",
         "📦 <b>Buyurtma tarkibi:</b>",
         *lines,
@@ -766,6 +795,15 @@ def admin_keyboard(order):
     return InlineKeyboardMarkup(rows)
 
 
+def courier_keyboard(order):
+    if order["delivery_type"] != "delivery" or order["status"] in ("done", "cancelled"):
+        return None
+    oid = order["id"]
+    if not order["courier_id"]:
+        return InlineKeyboardMarkup([[_btn("🛵 Men olaman", f"cr:{oid}")]])
+    return InlineKeyboardMarkup([[_btn("✔️ Yetkazildi", f"cd:{oid}")]])
+
+
 def cancel_confirm_keyboard(order_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [[_btn("✅ Ha, bekor qilish", f"st:{order_id}:cancelled"), _btn("↩️ Yo'q", f"cb:{order_id}")]]
@@ -817,7 +855,7 @@ async def notify_new_order(bot, order_id: int) -> None:
         targets.append((COURIER_CHAT_ID, "courier"))
 
     for chat_id, kind in targets:
-        markup = admin_keyboard(order) if kind == "admin" else None
+        markup = admin_keyboard(order) if kind == "admin" else courier_keyboard(order)
         msg = await safe_send(bot, chat_id, text, reply_markup=markup)
         if msg:
             save_msg(order_id, chat_id, msg.message_id, kind)
@@ -840,7 +878,7 @@ async def refresh_order_messages(bot, order_id: int) -> None:
         return
     text = order_text(order)
     for m in get_msgs(order_id):
-        markup = admin_keyboard(order) if m["kind"] == "admin" else None
+        markup = admin_keyboard(order) if m["kind"] == "admin" else courier_keyboard(order)
         await safe_edit(bot, m["chat_id"], m["message_id"], text, markup)
 
 
@@ -954,6 +992,9 @@ def build_chek(order) -> bytes:
         for ln in _wrap("Manzil: " + order["address"], W):
             c.line(ln)
     c.line("To'lov: " + str(order["payment"]))
+    if order["note"]:
+        for ln in _wrap("IZOH: " + order["note"], W):
+            c.line(ln)
     c.line("-" * W)
     for i in items:
         for ln in _lr(f"{i['count']} x {i['name']}", fmt_money(i["price"] * i["count"]), W):
@@ -1140,9 +1181,27 @@ async def serve_index(request):
     return web.FileResponse(page, headers={"Cache-Control": "no-store"})
 
 
+_HIT_CACHE = [0, []]
+
+
+def hit_products() -> list:
+    if time.time() < _HIT_CACHE[0]:
+        return _HIT_CACHE[1]
+    since = int(time.time()) - 30 * 86400
+    counter: Counter = Counter()
+    for row in db().execute("SELECT items_json FROM orders WHERE created_at>=? AND status!='cancelled'", (since,)):
+        for it in json.loads(row["items_json"]):
+            counter[it["id"]] += it["count"]
+    hits = [pid for pid, n in counter.most_common(5) if n >= HIT_MIN_SOLD and pid in PRODUCTS]
+    _HIT_CACHE[0], _HIT_CACHE[1] = time.time() + 120, hits
+    return hits
+
+
 async def api_status(request):
     return web.json_response(
         {
+            "hits": hit_products(),
+            "new": [p for p in NEW_PRODUCTS if p in PRODUCTS],
             "ok": True,
             "open": is_open(),
             "message": "" if is_open() else closed_message(),
@@ -1255,6 +1314,7 @@ async def api_order(request):
         return jerr("To'lov usuli noto'g'ri.")
 
     client_id = str(body.get("client_id", "")).strip()[:64] or None
+    note = str(body.get("note", "")).strip()[:200] or None
 
     # --- suiiste'molga qarshi cheklov ---
     if recent_order_count(user["id"], 600) >= 10:
@@ -1262,14 +1322,16 @@ async def api_order(request):
 
     upsert_user(user["id"], user["username"], user["full_name"])
     order_id, order_total, created = create_order(
-        user, client_id, phone, delivery, address or None, lat, lon, payment, items, total, delivery_fee
+        user, client_id, phone, delivery, address or None, lat, lon, payment, items, total, delivery_fee, note
     )
     if created:
         # Buyurtma bazaga saqlandi. Telegramga yuborish orqada ketadi —
         # Telegram band bo'lsa ham mijoz xatolik ko'rmaydi.
         spawn(notify_new_order(request.app["bot"], order_id))
         spawn(print_order_chek(request.app["bot"], order_id))
-    return web.json_response({"ok": True, "order_id": order_id, "total": order_total})
+    return web.json_response(
+        {"ok": True, "order_id": order_id, "order_no": order_no(get_order(order_id)), "total": order_total}
+    )
 
 
 async def api_my_orders(request):
@@ -1350,6 +1412,26 @@ def build_web_app(bot) -> web.Application:
 # =====================================================================
 #  BOT BUYRUQLARI (mijozlar uchun)
 # =====================================================================
+def open_app_markup():
+    """Ilovani bir bosishda ochadigan katta tugma (ilova manzili tayyor bo'lsa)."""
+    if not WEB_APP_URL:
+        return None
+    return InlineKeyboardMarkup(
+        [[InlineKeyboardButton("🍽 Menyu / Меню — buyurtma berish", web_app=WebAppInfo(url=WEB_APP_URL))]]
+    )
+
+
+async def on_any_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Mijoz botga istalgan xabar yozsa, ilovani ochish tugmasini yuboramiz."""
+    if not update.message or not update.effective_user:
+        return
+    upsert_user(update.effective_user.id, update.effective_user.username, update.effective_user.full_name)
+    await update.message.reply_text(
+        "Buyurtma berish uchun tugmani bosing 👇\nНажмите кнопку, чтобы сделать заказ 👇",
+        reply_markup=open_app_markup(),
+    )
+
+
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if not user or not update.message:
@@ -1358,14 +1440,14 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     nickname = f"@{user.username}" if user.username else user.full_name
     text = (
         f"Xush kelibsiz, <b>{esc(nickname)}</b>! 👋\n\n"
-        "Buyurtma berish uchun chap pastdagi <b>'Open App'</b> tugmasini bosing."
+        "Buyurtma berish uchun pastdagi <b>«Menyu»</b> tugmasini (yoki chap pastdagi <b>'Open App'</b> ni) bosing."
     )
     if not is_open():
         text += f"\n\n⛔ {esc(closed_message())}"
     if user.id in ADMIN_IDS:
         text += "\n\n" + ADMIN_HELP
     await update.message.reply_text(
-        text, parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove()
+        text, parse_mode=ParseMode.HTML, reply_markup=open_app_markup() or ReplyKeyboardRemove()
     )
 
 
@@ -1681,10 +1763,58 @@ async def run_report_checks(bot, now: datetime, first_pass: bool = False) -> Non
         set_setting("last_report_ts", str(until))
 
 
+STUCK_ALERTED: set = set()
+
+
+async def check_stuck_orders(bot) -> None:
+    limit = int(time.time()) - NEW_ORDER_ALERT_MIN * 60
+    rows = db().execute(
+        "SELECT * FROM orders WHERE status='new' AND created_at<? AND created_at>?", (limit, limit - 6 * 3600)
+    ).fetchall()
+    for o in rows:
+        if o["id"] in STUCK_ALERTED:
+            continue
+        STUCK_ALERTED.add(o["id"])
+        for admin_id in ADMIN_IDS:
+            await safe_send(
+                bot, admin_id,
+                f"⚠️ Buyurtma #{order_no(o)} {NEW_ORDER_ALERT_MIN} daqiqadan beri qabul qilinmadi!\n📞 {esc(o['phone'])}",
+            )
+
+
+def _work_range():
+    m = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})\s*", WORK_HOURS or "")
+    if not m:
+        return None
+    a, b_, c, d = map(int, m.groups())
+    return a * 60 + b_, c * 60 + d
+
+
+def check_schedule(now: datetime) -> None:
+    rng = _work_range()
+    if not AUTO_SCHEDULE or not rng:
+        return
+    start, end = rng
+    cur = now.hour * 60 + now.minute
+    should_open = (start <= cur < end) if start < end else (cur >= start or cur < end)
+    state = "open" if should_open else "closed"
+    if get_setting("sched_state") == state:
+        return
+    set_setting("sched_state", state)
+    if should_open:
+        set_setting("is_open", "1")
+        set_setting("closed_message", "")
+    else:
+        set_setting("is_open", "0")
+        set_setting("closed_message", f"Hozir yopiqmiz. Ish vaqti: {WORK_HOURS}")
+
+
 async def smena_scheduler(bot) -> None:
     first = True
     while True:
         try:
+            check_schedule(datetime.now(LOCAL_TZ))
+            await check_stuck_orders(bot)
             await run_report_checks(bot, datetime.now(LOCAL_TZ), first_pass=first)
             first = False
         except asyncio.CancelledError:
@@ -1968,6 +2098,45 @@ async def on_cancel_back_callback(update: Update, context: ContextTypes.DEFAULT_
         await query.edit_message_reply_markup(reply_markup=admin_keyboard(order))
 
 
+async def on_courier_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    oid = int(query.data.split(":")[1])
+    order = get_order(oid)
+    if not order or order["status"] in ("done", "cancelled"):
+        await query.answer("Bu buyurtma yopilgan.", show_alert=True)
+        return
+    name = query.from_user.full_name or "Kuryer"
+    cur = db().execute(
+        "UPDATE orders SET courier_id=?, courier_name=? WHERE id=? AND courier_id IS NULL",
+        (query.from_user.id, name, oid),
+    )
+    if cur.rowcount == 0:
+        await query.answer("Bu buyurtmani boshqa kuryer oldi.", show_alert=True)
+        await refresh_order_messages(context.bot, oid)
+        return
+    await query.answer("Buyurtma sizga biriktirildi ✅")
+    await refresh_order_messages(context.bot, oid)
+    await safe_send(context.bot, order["user_id"], f"🛵 Kuryer <b>{esc(name)}</b> buyurtmangizni #{order_no(order)} oldi.")
+    for admin_id in ADMIN_IDS:
+        await safe_send(context.bot, admin_id, f"🛵 #{order_no(order)} buyurtmani {esc(name)} oldi.")
+
+
+async def on_courier_done(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    oid = int(query.data.split(":")[1])
+    order = get_order(oid)
+    if not order or order["courier_id"] != query.from_user.id:
+        await query.answer("Bu buyurtma sizga biriktirilmagan.", show_alert=True)
+        return
+    if order["status"] not in ("ready", "onway"):
+        await query.answer("Buyurtma hali tayyor emas. Tayyor bo'lgach bosing.", show_alert=True)
+        return
+    set_order_status(oid, "done")
+    await query.answer("Yetkazildi ✅")
+    await refresh_order_messages(context.bot, oid)
+    await notify_customer_status(context.bot, get_order(oid))
+
+
 async def on_rate_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     try:
@@ -2039,6 +2208,14 @@ def find_cloudflared():
         if c and Path(c).exists():
             return c
     return None
+
+
+def site_link(tunnel_url: str) -> str:
+    """Doimiy sayt bo'lsa: u ochiladi va server manzili ?api= bilan beriladi."""
+    if not PERMANENT_SITE_URL:
+        return tunnel_url
+    sep = "&" if "?" in PERMANENT_SITE_URL else "?"
+    return f"{PERMANENT_SITE_URL}{sep}api={tunnel_url}"
 
 
 def stop_tunnel() -> None:
@@ -2127,7 +2304,7 @@ async def post_init(application):
             loop = asyncio.get_running_loop()
             url = await loop.run_in_executor(None, start_tunnel, exe, PORT)
             if url:
-                WEB_APP_URL = url
+                WEB_APP_URL = site_link(url)
             else:
                 print("⚠️  Manzil olinmadi. Internetni tekshirib, botni qayta ishga tushiring.")
 
@@ -2186,11 +2363,14 @@ def main():
     app.add_handler(CommandHandler("eksport", cmd_eksport))
 
     app.add_handler(CallbackQueryHandler(on_status_callback, pattern=r"^st:\d+:(accepted|ready|onway|done|cancelled)$"))
+    app.add_handler(CallbackQueryHandler(on_courier_take, pattern=r"^cr:\d+$"))
+    app.add_handler(CallbackQueryHandler(on_courier_done, pattern=r"^cd:\d+$"))
     app.add_handler(CallbackQueryHandler(on_cancel_ask_callback, pattern=r"^cq:\d+$"))
     app.add_handler(CallbackQueryHandler(on_cancel_back_callback, pattern=r"^cb:\d+$"))
     app.add_handler(CallbackQueryHandler(on_rate_callback, pattern=r"^rate:\d+:[1-5]$"))
     app.add_handler(CallbackQueryHandler(on_stop_callback, pattern=r"^sl:"))
     app.add_handler(CallbackQueryHandler(on_broadcast_callback, pattern=r"^bc:(yes|no)$"))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, on_any_text))
     app.add_error_handler(on_error)
 
     print("Bot muvaffaqiyatli ishga tushmoqda...")
