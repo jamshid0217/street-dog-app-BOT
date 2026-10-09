@@ -947,6 +947,9 @@
     }
     .bottom-nav .nav-item { text-shadow: 0 1px 6px rgba(0,0,0,0.55); }
     .bottom-nav .nav-item i { filter: drop-shadow(0 1px 4px rgba(0,0,0,0.5)); }
+    .loc-send{width:100%;padding:14px;border-radius:14px;border:2px dashed #ff7a00;background:rgba(255,122,0,.12);color:#ff7a00;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px}
+    .loc-send.ok{border-style:solid;border-color:#2e9e4f;background:rgba(46,158,79,.15);color:#2e9e4f}
+    .loc-hint{font-size:12px;opacity:.65;margin-top:6px}
   </style>
 </head>
 <body>
@@ -1128,12 +1131,11 @@
 
       <div class="form-group" id="addressGroup">
         <label>Yetkazib berish manzili</label>
-        <div class="form-input-box">
-          <input type="text" id="addressInput" class="form-input" placeholder="Urganch shahri, Al-Xorazmiy ko'chasi 12-uy">
-          <button type="button" class="location-btn" onclick="getCurrentLocation()" title="Joylashuvni aniqlash">
-            <i class="fa-solid fa-location-crosshairs"></i>
-          </button>
-        </div>
+        <input type="hidden" id="addressInput">
+        <button type="button" class="loc-send" id="locSendBtn" onclick="getCurrentLocation()">
+          <i class="fa-solid fa-location-crosshairs"></i><span id="locSendText">Joylashuvimni yuborish</span>
+        </button>
+        <div class="loc-hint">Kuryer sizni xaritadan topadi, manzilni yozib o'tirish shart emas.</div>
       </div>
 
       <div class="form-group">
@@ -1148,14 +1150,18 @@
 
       <div class="form-group">
         <label>To'lov usuli</label>
-        <div class="option-grid">
-          <div class="option-card active" id="pay-cash" onclick="selectPaymentMethod('Naqd / Karta')">
+        <div class="option-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="option-card active" id="pay-cash" onclick="selectPaymentMethod('Naqd')">
             <i class="fa-solid fa-money-bill-wave"></i>
-            <span>Naqd / Karta</span>
+            <span>Naqd</span>
           </div>
-          <div class="option-card" id="pay-click" onclick="selectPaymentMethod('Click / Payme')">
+          <div class="option-card" id="pay-card" onclick="selectPaymentMethod('Karta')">
+            <i class="fa-solid fa-credit-card"></i>
+            <span>Karta</span>
+          </div>
+          <div class="option-card" id="pay-click" onclick="selectPaymentMethod('Click')">
             <i class="fa-solid fa-mobile-screen-button"></i>
-            <span>Click / Payme</span>
+            <span>Click</span>
           </div>
         </div>
       </div>
@@ -1197,7 +1203,7 @@
 
       var RU = {
         "Xush kelibsiz! 👋": "Добро пожаловать! 👋", "YOQIMLI ISHTAHA TILAYDI": "ПРИЯТНОГО АППЕТИТА",
-        "Sevimli taomingizni qidiring...": "Найдите любимое блюдо...", "Barchasi": "Все", "Sevimli": "Избранное", "🔥 Bugungi hit taomi": "🔥 Хит дня", "🆕 Yangi taom": "🆕 Новинка", "❤️ Siz sevgan taom — bu sizga yoqadi": "❤️ Ваше любимое — вам понравится", "🔥 Hit": "🔥 Хит", "Yangi": "Новинка", "Xot-Dog": "Хот-дог",
+        "Sevimli taomingizni qidiring...": "Найдите любимое блюдо...", "Barchasi": "Все", "Sevimli": "Избранное", "Naqd": "Наличные", "Karta": "Карта", "Joylashuvimni yuborish": "Отправить моё местоположение", "✅ Joylashuv yuborildi": "✅ Местоположение отправлено", "Aniqlanmoqda...": "Определяем...", "Kuryer sizni xaritadan topadi, manzilni yozib o'tirish shart emas.": "Курьер найдёт вас по карте, писать адрес не нужно.", "Iltimos, «Joylashuvimni yuborish» tugmasini bosing!": "Пожалуйста, нажмите «Отправить моё местоположение»!", "Joylashuvni aniqlab bo'lmadi. Telefon sozlamalarida Telegram uchun joylashuvga ruxsat bering va qayta urinib ko'ring.": "Не удалось определить местоположение. Разрешите Telegram доступ к геопозиции в настройках телефона и попробуйте снова.", "🔥 Bugungi hit taomi": "🔥 Хит дня", "🆕 Yangi taom": "🆕 Новинка", "❤️ Siz sevgan taom — bu sizga yoqadi": "❤️ Ваше любимое — вам понравится", "🔥 Hit": "🔥 Хит", "Yangi": "Новинка", "Xot-Dog": "Хот-дог",
         "Burger": "Бургер", "Garnirlar": "Гарниры", "Menyu": "Меню", "Buyurtmalarim": "Мои заказы", "Profil": "Профиль",
         "Mening buyurtmalarim 📦": "Мои заказы 📦", "Mening profilim 👤": "Мой профиль 👤",
         "Sizda hali buyurtmalar yo'q": "У вас пока нет заказов", "Buyurtmalar soni": "Количество заказов",
@@ -1416,7 +1422,7 @@
     });
     let myOrders = JSON.parse(localStorage.getItem('street_dog_orders')) || [];
     let selectedDelivery = 'delivery'; 
-    let selectedPayment = 'Naqd / Karta';
+    let selectedPayment = 'Naqd';
     let selectedDetailId = null;
     let modalQty = 1;
     let userLocation = null;
@@ -1425,6 +1431,10 @@
     let shopClosed = false;
     let shopMessage = '';
     let stopList = new Set();
+    let hitSet = new Set(), newSet = new Set();
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem('sd_favs') || '[]'); } catch (e) {}
+    let promoList = [], promoIdx = -1, promoTimer = null;
     let pendingClientId = null;
     let deliveryFee = 10000; // server /api/status orqali yangilaydi (taxminan 5 km gacha)
 
@@ -1489,8 +1499,7 @@
       try {
         const s = JSON.parse(localStorage.getItem('street_dog_checkout') || '{}');
         if (s.phone) document.getElementById('phoneInput').value = s.phone;
-        if (s.address) document.getElementById('addressInput').value = s.address;
-        if (s.payment === 'Click / Payme') selectPaymentMethod('Click / Payme');
+        if (s.payment) selectPaymentMethod(s.payment);
       } catch (e) {}
     }
 
@@ -1515,9 +1524,6 @@
       }
     });
 
-    let hitSet = new Set(), newSet = new Set();
-    let favs = [];
-    try { favs = JSON.parse(localStorage.getItem('sd_favs') || '[]'); } catch (e) {}
     function renderBadges() {
       Object.keys(products).forEach(id => {
         const el = document.getElementById('bd-' + id);
@@ -1575,7 +1581,6 @@
     }
 
     // Tepadagi banner: bugungi hit, yangi va siz sevgan taomlar ketma-ket almashib turadi
-    let promoList = [], promoIdx = -1, promoTimer = null;
     function promoOpen() { const s = promoList[Math.max(promoIdx, 0)]; if (s) openDetail(s.id); }
     function buildPromo() {
       const seen = new Set(); const list = [];
@@ -1926,6 +1931,7 @@
         return;
       }
       updateCheckoutSummary();
+      resetLocation();
       loadSavedCheckout();
       document.getElementById('checkoutModal').classList.add('active');
     }
@@ -1953,36 +1959,44 @@
     }
 
     function selectPaymentMethod(method) {
+      const ids = { 'Naqd': 'pay-cash', 'Karta': 'pay-card', 'Click': 'pay-click' };
+      if (!ids[method]) return;
       selectedPayment = method;
-      const cashBtn = document.getElementById('pay-cash');
-      const clickBtn = document.getElementById('pay-click');
-
-      if (method === 'Naqd / Karta') {
-        cashBtn.classList.add('active');
-        clickBtn.classList.remove('active');
-      } else {
-        clickBtn.classList.add('active');
-        cashBtn.classList.remove('active');
-      }
+      Object.keys(ids).forEach(m => document.getElementById(ids[m]).classList.toggle('active', m === method));
     }
 
+    function setLocUI(state) {
+      const b = document.getElementById('locSendBtn'), t = document.getElementById('locSendText');
+      if (!b || !t) return;
+      b.classList.toggle('ok', state === 'ok');
+      t.innerText = state === 'ok' ? '✅ Joylashuv yuborildi' : state === 'wait' ? 'Aniqlanmoqda...' : 'Joylashuvimni yuborish';
+    }
+    function resetLocation() {
+      userLocation = null;
+      document.getElementById('addressInput').value = '';
+      setLocUI('idle');
+    }
     function getCurrentLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-            userLocation = { latitude, longitude };
-            document.getElementById('addressInput').value = `Geolokatsiya aniqlandi (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
-            alert("Joylashuvingiz muvaffaqiyatli aniqlandi!");
-          },
-          (error) => {
-            alert("Joylashuvni aniqlab bo'lmadi. Iltimos, manzilni qo'lda kiriting.");
-          }
-        );
-      } else {
-        alert("Brazeringiz geolokatsiyani qo'llab-quvvatlamaydi.");
+      if (!navigator.geolocation) {
+        alert("Qurilmangiz geolokatsiyani qo'llab-quvvatlamaydi.");
+        return;
       }
+      setLocUI('wait');
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          userLocation = { latitude, longitude };
+          document.getElementById('addressInput').value = 'Joylashuv: ' + latitude.toFixed(5) + ', ' + longitude.toFixed(5);
+          setLocUI('ok');
+          if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        },
+        () => {
+          setLocUI('idle');
+          alert("Joylashuvni aniqlab bo'lmadi. Telefon sozlamalarida Telegram uchun joylashuvga ruxsat bering va qayta urinib ko'ring.");
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
     }
 
     // ==================== SERVER (BOT) BILAN ALOQA ====================
@@ -2118,8 +2132,8 @@
         return;
       }
 
-      if (selectedDelivery === 'delivery' && !address) {
-        alert("Iltimos, yetkazib berish manzilini kiriting!");
+      if (selectedDelivery === 'delivery' && !userLocation) {
+        alert("Iltimos, «Joylashuvimni yuborish» tugmasini bosing!");
         return;
       }
 

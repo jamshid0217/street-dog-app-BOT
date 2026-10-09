@@ -237,7 +237,7 @@ PRODUCTS = {
     'g6_20': {"category": 'garnir', "name": 'Картофель фри', "price": 20000},
 }
 
-PAYMENT_METHODS = {"Naqd / Karta", "Click / Payme"}
+PAYMENT_METHODS = {"Naqd", "Karta", "Click", "Naqd / Karta", "Click / Payme"}  # eski nomlar eski ilovalar uchun
 
 STATUS_LABELS = {
     "new": "🆕 Yangi",
@@ -1422,11 +1422,25 @@ def open_app_markup():
     )
 
 
+async def refresh_menu_button(bot, chat_id: int) -> None:
+    """Mijozning 'Open App' tugmasini hozirgi manzilga yangilaydi (eski manzil eslab qolinmasin)."""
+    if not WEB_APP_URL:
+        return
+    try:
+        await bot.set_chat_menu_button(
+            chat_id=chat_id,
+            menu_button=MenuButtonWebApp(text="Open App", web_app=WebAppInfo(url=WEB_APP_URL)),
+        )
+    except Exception:
+        pass
+
+
 async def on_any_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Mijoz botga istalgan xabar yozsa, ilovani ochish tugmasini yuboramiz."""
     if not update.message or not update.effective_user:
         return
     upsert_user(update.effective_user.id, update.effective_user.username, update.effective_user.full_name)
+    await refresh_menu_button(context.bot, update.effective_chat.id)
     await update.message.reply_text(
         "Buyurtma berish uchun tugmani bosing 👇\nНажмите кнопку, чтобы сделать заказ 👇",
         reply_markup=open_app_markup(),
@@ -1434,6 +1448,8 @@ async def on_any_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat:
+        await refresh_menu_button(context.bot, update.effective_chat.id)
     user = update.effective_user
     if not user or not update.message:
         return
