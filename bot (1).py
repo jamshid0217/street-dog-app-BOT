@@ -126,7 +126,7 @@ def env_int_list(name: str, default: str) -> list:
 #     ichida bot tokeni bor.
 # =====================================================================
 BOT_TOKEN = '8983485871:AAErGK9UHLKIiP9ShCV6eKShozOfzz8CIiI'  # @BotFather bergan token
-ADMIN_IDS = [6069854654]  # admin(lar) Telegram ID si
+ADMIN_IDS = [6069854654,6048997378]  # admin(lar) Telegram ID si
 COURIER_CHAT_ID = -5491727953  # kuryerlar guruhi ID si (ixtiyoriy)
 
 CONTACT_PHONE = '+998 91 966 40 40'
