@@ -150,6 +150,8 @@ DELIVERY_FEE = 10000  # dostavka narxi (so'm), taxminan 5 km gacha. Olib ketishd
 COMMISSION_PERCENT = 5          # savdodan sizning ulushingiz (foiz)
 NEW_PRODUCTS = []               # "Yangi" belgisi qo'yiladigan taom kodlari, masalan ['b5_75', 'g3_35']
 HIT_MIN_SOLD = 3                # 30 kunda kamida shuncha dona sotilgan eng yaxshi 5 ta taom "Hit" bo'ladi
+REVIEW_URL = ""                # Google Maps sharh havolasi: 5 baho bergan mijozga yuboriladi (bo'sh = yuborilmaydi)
+LOW_RATING_MAX = 2              # shu baho va undan past bo'lsa adminga shoshilinch ogohlantirish
 NEW_ORDER_ALERT_MIN = 10        # yangi buyurtma shuncha daqiqa qabul qilinmasa, adminga ogohlantirish
 AUTO_SCHEDULE = False           # WORK_HOURS bo'yicha o'zi ochiladi/yopiladi (qo'lda /ochish /yopish keyingi ochilish/yopilishgacha ishlaydi)
 SMENA_HISOBOT_VAQTI = "23:00"   # hisobot har kuni shu vaqtda o'zi yuboriladi (SS:DD)
@@ -390,6 +392,7 @@ def init_db() -> None:
             db().execute("ALTER TABLE orders ADD COLUMN " + col)
         except sqlite3.OperationalError:
             pass
+    db().execute("CREATE TABLE IF NOT EXISTS courier_loc (user_id INTEGER PRIMARY KEY, lat REAL, lon REAL, updated_at INTEGER)")
     db().execute("CREATE TABLE IF NOT EXISTS couriers (user_id INTEGER PRIMARY KEY, phone TEXT NOT NULL)")
     try:  # eski bazalar uchun: mijoz izohi ustuni
         db().execute("ALTER TABLE orders ADD COLUMN note TEXT")
@@ -1405,7 +1408,8 @@ def build_web_app(bot) -> web.Application:
     app.router.add_post("/api/order", api_order)
     app.router.add_post("/api/my_orders", api_my_orders)
     app.router.add_post("/api/avatar", api_avatar)
-    for path in ("/api/status", "/api/order", "/api/my_orders", "/api/avatar"):
+    app.router.add_post("/api/track", api_track)
+    for path in ("/api/status", "/api/order", "/api/my_orders", "/api/avatar", "/api/track"):
         app.router.add_route("OPTIONS", path, api_options)
     return app
 
@@ -2132,6 +2136,52 @@ async def cmd_telefon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Saqlandi: {phone}\nEndi kuryerlar guruhida «🛵 Men olaman» tugmasini bosa olasiz.")
 
 
+async def on_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Kuryer botga 'Jonli joylashuv' (Live Location) yuborsa, uni saqlaymiz (faqat ro'yxatdagi kuryerlar)."""
+    msg = update.edited_message or update.message
+    if not msg or not msg.location or not msg.from_user:
+        return
+    if not db().execute("SELECT 1 FROM couriers WHERE user_id=?", (msg.from_user.id,)).fetchone():
+        return
+    db().execute(
+        "INSERT INTO courier_loc (user_id, lat, lon, updated_at) VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(user_id) DO UPDATE SET lat=excluded.lat, lon=excluded.lon, updated_at=excluded.updated_at",
+        (msg.from_user.id, msg.location.latitude, msg.location.longitude, int(time.time())),
+    )
+
+
+def track_info(order_id: int, user_id: int) -> dict:
+    o = get_order(order_id)
+    if not o or o["user_id"] != user_id:
+        return {"active": False}
+    if o["delivery_type"] != "delivery" or not o["courier_id"] or o["status"] not in ("ready", "onway"):
+        return {"active": False}
+    loc = db().execute("SELECT lat, lon, updated_at FROM courier_loc WHERE user_id=?", (o["courier_id"],)).fetchone()
+    fresh = bool(loc and time.time() - loc["updated_at"] < 600)
+    return {
+        "active": True,
+        "status": o["status"],
+        "name": o["courier_name"],
+        "phone": o["courier_phone"],
+        "courier": {"lat": loc["lat"], "lon": loc["lon"]} if fresh else None,
+        "dest": {"lat": o["lat"], "lon": o["lon"]} if o["lat"] is not None else None,
+    }
+
+
+async def api_track(request):
+    body = await read_json(request)
+    if body is None:
+        return jerr("So'rov noto'g'ri formatda.")
+    user = validate_init_data(str(body.get("init_data", "")), BOT_TOKEN)
+    if not user:
+        return jerr("Telegram orqali tasdiqlanmadi.", 401)
+    try:
+        oid = int(body.get("order_id"))
+    except (TypeError, ValueError):
+        return jerr("Buyurtma topilmadi.")
+    return web.json_response({"ok": True, **track_info(oid, user["id"])})
+
+
 async def on_courier_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     oid = int(query.data.split(":")[1])
@@ -2158,6 +2208,11 @@ async def on_courier_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await query.answer("Buyurtma sizga biriktirildi ✅")
     await refresh_order_messages(context.bot, oid)
+    await safe_send(
+        context.bot, query.from_user.id,
+        "📍 Mijoz buyurtmani xaritada kuzatishi uchun shu yerga <b>Jonli joylashuv</b> yuboring:\n"
+        "📎 → Joylashuv → «Jonli joylashuvni ulashish» (masalan, 8 soatga).",
+    )
     await safe_send(context.bot, order["user_id"], f"🛵 Kuryer <b>{esc(name)}</b> buyurtmangizni #{order_no(order)} oldi.\n📞 Kuryer telefoni: {esc(phone)}")
     for admin_id in ADMIN_IDS:
         await safe_send(context.bot, admin_id, f"🛵 #{order_no(order)} buyurtmani {esc(name)} ({esc(phone)}) oldi.")
@@ -2197,10 +2252,21 @@ async def on_rate_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     set_order_rating(order_id, rating)
     await query.answer("Rahmat! 🙏")
     await query.edit_message_text(f"Bahoyingiz uchun rahmat! {'⭐' * rating}")
+    low = rating <= LOW_RATING_MAX
     for admin_id in ADMIN_IDS:
-        await safe_send(
-            context.bot, admin_id, f"⭐ Buyurtma #{order_no(order)} uchun mijoz {rating} baho berdi."
-        )
+        if low:
+            await safe_send(
+                context.bot, admin_id,
+                f"🚨 <b>PAST BAHO: {'⭐' * rating}</b>\nBuyurtma #{order_no(order)} · 📞 {esc(order['phone'])}\n"
+                f"👤 {esc(order['full_name'] or '')} {('@' + order['username']) if order['username'] else ''}\n"
+                f"Mijoz bilan bog'lanib, muammoni hal qiling.",
+            )
+        else:
+            await safe_send(context.bot, admin_id, f"⭐ Buyurtma #{order_no(order)} uchun mijoz {rating} baho berdi.")
+    if low:
+        await safe_send(context.bot, order["user_id"], "Noqulaylik uchun uzr so'raymiz 🙏 Siz bilan tez orada bog'lanamiz va muammoni hal qilamiz.")
+    elif rating == 5 and REVIEW_URL:
+        await safe_send(context.bot, order["user_id"], f"Rahmat! 🥰 Agar yoqqan bo'lsa, sharh qoldirsangiz juda xursand bo'lamiz:\n{REVIEW_URL}")
 
 
 async def on_error(update, context: ContextTypes.DEFAULT_TYPE):
@@ -2391,6 +2457,7 @@ def main():
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("telefon", cmd_telefon))
+    app.add_handler(MessageHandler(filters.LOCATION, on_location))
     app.add_handler(CommandHandler("aloqa", cmd_aloqa))
     app.add_handler(CommandHandler("manzil", cmd_manzil))
     app.add_handler(CommandHandler("ochish", cmd_ochish))
@@ -2417,7 +2484,7 @@ def main():
     app.add_error_handler(on_error)
 
     print("Bot muvaffaqiyatli ishga tushmoqda...")
-    app.run_polling()
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":

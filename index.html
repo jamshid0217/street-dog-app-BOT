@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>STREET DOG URGANCH</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * {
@@ -950,6 +952,10 @@
     .loc-send{width:100%;padding:14px;border-radius:14px;border:2px dashed #ff7a00;background:rgba(255,122,0,.12);color:#ff7a00;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px}
     .loc-send.ok{border-style:solid;border-color:#2e9e4f;background:rgba(46,158,79,.15);color:#2e9e4f}
     .loc-hint{font-size:12px;opacity:.65;margin-top:6px}
+    .track-wrap{margin:10px 0 4px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,122,0,.5);display:none}
+    .track-map{height:190px;width:100%;background:#2b2b2b}
+    .track-info{padding:8px 12px;font-size:13px;font-weight:700;background:rgba(255,122,0,.15)}
+    .pin{font-size:26px;line-height:26px;text-align:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
   </style>
 </head>
 <body>
@@ -2216,7 +2222,44 @@
       }
     }
 
+    // Kuryerning jonli joylashuvi (faqat 'Tayyor'/'Yo'lda' holatida, yakunlangach yo'qoladi)
+    const trackMaps = {};
+    function updateTrack(id, d) {
+      const wrap = document.getElementById('tw-' + id), el = document.getElementById('map-' + id), info = document.getElementById('ti-' + id);
+      if (!wrap || !el || !info || typeof L === 'undefined') return;
+      if (!d.active) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+      let t = trackMaps[id];
+      if (!t || t.el !== el) {
+        const map = L.map(el, { zoomControl: false, attributionControl: false });
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        t = trackMaps[id] = { el, map, c: null, h: null };
+        const dest = d.dest || d.courier;
+        if (dest) map.setView([dest.lat, dest.lon], 15);
+      }
+      const icon = e => L.divIcon({ className: '', html: '<div class="pin">' + e + '</div>', iconSize: [26, 26], iconAnchor: [13, 13] });
+      if (d.dest) { if (!t.h) t.h = L.marker([d.dest.lat, d.dest.lon], { icon: icon('🏠') }).addTo(t.map); }
+      if (d.courier) {
+        if (!t.c) t.c = L.marker([d.courier.lat, d.courier.lon], { icon: icon('🛵') }).addTo(t.map);
+        else t.c.setLatLng([d.courier.lat, d.courier.lon]);
+        if (d.dest) t.map.fitBounds([[d.courier.lat, d.courier.lon], [d.dest.lat, d.dest.lon]], { padding: [34, 34], maxZoom: 16 });
+        else t.map.setView([d.courier.lat, d.courier.lon], 16);
+      }
+      info.innerText = '🛵 ' + (d.name || 'Kuryer') + (d.phone ? ' · ' + d.phone : '') + (d.courier ? " — yo'lda" : ' — joylashuvi hozircha yo\'q');
+      t.map.invalidateSize();
+    }
+    async function pollTrack() {
+      if (!tg.initData || !document.getElementById('tab-orders').classList.contains('active')) return;
+      for (const o of myOrders) {
+        if (!o.serverId || !(o.status === 'ready' || o.status === 'onway')) continue;
+        if (!document.getElementById('map-' + o.serverId)) continue;
+        try { updateTrack(o.serverId, await apiRequest('/api/track', 'POST', { init_data: tg.initData, order_id: o.serverId })); } catch (e) {}
+      }
+    }
+    setInterval(pollTrack, 8000);
+
     function renderAllOrders() {
+      setTimeout(pollTrack, 300);
       const ordersList = document.getElementById('orders-list');
 
       if (!myOrders || myOrders.length === 0) {
@@ -2270,6 +2313,7 @@
               <span class="order-status">${STATUS_LABELS[order.status] || 'Tayyorlanmoqda... ⏳'}</span>
             </div>
             ${trackHtml(order, order.isDelivery !== false && order.deliveryFee > 0)}
+            ${(order.serverId && order.isDelivery !== false && order.deliveryFee > 0 && (order.status === 'ready' || order.status === 'onway')) ? `<div class="track-wrap" id="tw-${order.serverId}"><div class="track-map" id="map-${order.serverId}"></div><div class="track-info" id="ti-${order.serverId}">🛵 ...</div></div>` : ''}
             <ul class="order-items-list">
               ${itemsHtml}
             </ul>
