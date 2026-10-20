@@ -1144,9 +1144,14 @@
         <div class="loc-hint">Kuryer sizni xaritadan topadi, manzilni yozib o'tirish shart emas.</div>
       </div>
 
+      <div class="form-group" id="branchGroup" style="display:none">
+        <label>Qaysi filialdan olib ketasiz?</label>
+        <select id="branchSelect" class="form-input"></select>
+      </div>
+
       <div class="form-group">
         <label>Telefon raqamingiz</label>
-        <input type="tel" id="phoneInput" class="form-input" placeholder="+998 98 765 43 21">
+        <input type="tel" id="phoneInput" class="form-input" inputmode="numeric" maxlength="12" autocomplete="tel" placeholder="998 98 765 43 21" oninput="this.value = this.value.replace(/\D/g, '')">
       </div>
 
       <div class="form-group">
@@ -1170,6 +1175,15 @@
             <span>Click</span>
           </div>
         </div>
+      </div>
+
+      <div class="form-group">
+        <label>Promokod (bo'lsa)</label>
+        <div style="display:flex;gap:8px">
+          <input id="promoInput" class="form-input" maxlength="20" autocomplete="off" autocapitalize="characters" placeholder="Masalan: STREET10" oninput="onPromoInput()" style="flex:1;text-transform:uppercase">
+          <button type="button" class="form-input" style="width:auto;cursor:pointer;font-weight:600" onclick="applyPromo()">Qo'llash</button>
+        </div>
+        <div id="promoMsg" style="font-size:13px;margin-top:6px"></div>
       </div>
 
       <div class="checkout-summary" id="checkoutSummary"></div>
@@ -1418,6 +1432,24 @@
       g6_20: { id: 'g6_20', category: 'garnir', name: 'Картофель фри', price: 20000, img: 'https://i.ibb.co/3Y53x7B3/uploaded-image.jpg', desc: 'Хрустящий золотистый картофель фри' }
     };
 
+    // Admin /yangi bilan qo'shgan taomlar: serverdan keladi, oxirgisi xotirada saqlanadi
+    const DISH_PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#2a2a2a"/><text x="50%" y="58%" font-size="90" text-anchor="middle">🍽️</text></svg>');
+    let customSig = '';
+    function mergeCustomProducts(list) {
+      Object.keys(products).forEach(id => { if (products[id].custom) delete products[id]; });
+      const base = (API_URL || window.location.origin).replace(/\/+$/, '');
+      (list || []).forEach(d => {
+        if (!d || !d.id || products[d.id]) return;
+        products[d.id] = { id: d.id, category: d.category, name: d.name, price: Number(d.price) || 0,
+          img: d.img ? base + d.img : DISH_PLACEHOLDER, desc: d.desc || '', custom: true };
+      });
+    }
+    try {
+      const savedCustom = JSON.parse(localStorage.getItem('street_dog_custom') || '[]');
+      mergeCustomProducts(savedCustom);
+      customSig = JSON.stringify(savedCustom);
+    } catch (e) {}
+
     let cart = JSON.parse(localStorage.getItem('street_dog_cart')) || {};
     // Menyudan olib tashlangan yoki nomi/narxi o'zgargan taomlarni eski savatdan tozalaymiz
     Object.keys(cart).forEach(id => {
@@ -1437,11 +1469,13 @@
     let shopClosed = false;
     let shopMessage = '';
     let stopList = new Set();
+    let shopData = null;  // serverdan kelgan oxirgi holat (filiallar bo'yicha ochiq/tugagan taomlar ham shu yerda)
     let hitSet = new Set(), newSet = new Set();
     let favs = [];
     try { favs = JSON.parse(localStorage.getItem('sd_favs') || '[]'); } catch (e) {}
     let promoList = [], promoIdx = -1, promoTimer = null;
     let pendingClientId = null;
+    let branches = [];
     let deliveryFee = 10000; // server /api/status orqali yangilaydi (taxminan 5 km gacha)
 
     const STATUS_LABELS = {
@@ -1504,7 +1538,7 @@
     function loadSavedCheckout() {
       try {
         const s = JSON.parse(localStorage.getItem('street_dog_checkout') || '{}');
-        if (s.phone) document.getElementById('phoneInput').value = s.phone;
+        if (s.phone) document.getElementById('phoneInput').value = String(s.phone).replace(/\D/g, '').slice(-12);
         if (s.payment) selectPaymentMethod(s.payment);
       } catch (e) {}
     }
@@ -1914,16 +1948,45 @@
       }
     }
 
+    // Promokod: server tekshiradi; bu yerda faqat chegirma foizini ko'rsatamiz
+    let promo = null; // { code, percent }
+    function promoDiscount(food) { return promo ? Math.floor(food * promo.percent / 100 / 100) * 100 : 0; }
+    function onPromoInput() {
+      promo = null;
+      const m = document.getElementById('promoMsg');
+      if (m) m.textContent = '';
+      updateCheckoutSummary();
+    }
+    async function applyPromo() {
+      const input = document.getElementById('promoInput'), msg = document.getElementById('promoMsg');
+      const code = input.value.trim();
+      if (!code) { promo = null; msg.textContent = ''; updateCheckoutSummary(); return; }
+      msg.style.color = ''; msg.textContent = 'Tekshirilmoqda...';
+      try {
+        const d = await apiRequest('/api/promo_check', 'POST', { init_data: tg.initData, code: code });
+        promo = { code: d.code, percent: d.percent };
+        msg.style.color = '#2e9e5b';
+        msg.textContent = '✅ ' + d.percent + '% chegirma qo\'llandi';
+      } catch (e) {
+        promo = null;
+        msg.style.color = '#e5484d';
+        msg.textContent = e.message || 'Promokod tekshirilmadi.';
+      }
+      updateCheckoutSummary();
+    }
+
     function updateCheckoutSummary() {
       const box = document.getElementById('checkoutSummary');
       if (!box) return;
       let food = 0;
       Object.values(cart).forEach(item => { food += item.price * item.count; });
       const fee = selectedDelivery === 'delivery' ? deliveryFee : 0;
+      const disc = promoDiscount(food);
       box.innerHTML = `
         <div class="row"><span>Taomlar</span><span>${food.toLocaleString()} so'm</span></div>
+        ${disc > 0 ? `<div class="row"><span>Chegirma (${promo.code})</span><span>−${disc.toLocaleString()} so'm</span></div>` : ''}
         <div class="row"><span>Dostavka</span><span>${fee > 0 ? fee.toLocaleString() + " so'm" : 'Bepul'}</span></div>
-        <div class="row total"><span>Jami</span><span>${(food + fee).toLocaleString()} so'm</span></div>
+        <div class="row total"><span>Jami</span><span>${(food - disc + fee).toLocaleString()} so'm</span></div>
       `;
     }
 
@@ -1961,7 +2024,24 @@
         delBtn.classList.remove('active');
         addressGroup.style.display = 'none';
       }
+      syncBranchGroup();
       updateCheckoutSummary();
+    }
+
+    // Filiallar: olib ketishda mijoz filialni tanlaydi (dostavkada server eng yaqinini o'zi topadi)
+    function renderBranchSelect() {
+      const sel = document.getElementById('branchSelect');
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = branches.map(b => '<option value="' + b.id + '">' + b.name + '</option>').join('');
+      if (prev && branches.some(b => b.id === prev)) sel.value = prev;
+      sel.onchange = () => { computeShopState(); applyShopStatus(); };
+      syncBranchGroup();
+    }
+    function syncBranchGroup() {
+      const g = document.getElementById('branchGroup');
+      if (g) g.style.display = (selectedDelivery === 'pickup' && branches.length) ? 'block' : 'none';
+      if (shopData) { computeShopState(); applyShopStatus(); }
     }
 
     function selectPaymentMethod(method) {
@@ -2044,11 +2124,13 @@
       if (!apiConfigured()) return;
       try {
         const data = await apiRequest('/api/status', 'GET');
-        shopClosed = !data.open;
-        shopMessage = data.message || '';
-        stopList = new Set(Array.isArray(data.stoplist) ? data.stoplist : []);
+        shopData = data;
+        computeShopState();
         hitSet = new Set(data.hits || []); newSet = new Set(data.new || []); renderBadges(); buildPromo();
         if (Number.isFinite(data.delivery_fee)) { deliveryFee = data.delivery_fee; updateCheckoutSummary(); }
+        if (Array.isArray(data.custom_products)) applyCustomProducts(data.custom_products);
+        if (data.prices) applyServerPrices(data.prices);
+        if (Array.isArray(data.branches)) { branches = data.branches; renderBranchSelect(); }
         serverOffline = false;
         applyShopStatus();
       } catch (e) {
@@ -2056,6 +2138,51 @@
         serverOffline = true;
         applyShopStatus();
       }
+    }
+
+    function applyCustomProducts(list) {
+      const sig = JSON.stringify(list);
+      if (sig === customSig) return;
+      customSig = sig;
+      try { localStorage.setItem('street_dog_custom', sig); } catch (e) {}
+      mergeCustomProducts(list);
+      Object.keys(cart).forEach(id => { if (!products[id]) delete cart[id]; });
+      saveCartToStorage();
+      renderProducts();
+      Object.keys(products).forEach(id => updateProductUI(id));
+      updateCartBar();
+      if (typeof updateCheckoutSummary === 'function') updateCheckoutSummary();
+    }
+
+    // Admin /narx bilan narxni o'zgartirsa, ilova ham yangi narxni ko'rsatadi
+    function applyServerPrices(prices) {
+      let changed = false;
+      Object.keys(prices).forEach(id => {
+        const p = products[id], v = Number(prices[id]);
+        if (p && Number.isFinite(v) && v > 0 && p.price !== v) { p.price = v; changed = true; }
+      });
+      if (!changed) return;
+      Object.keys(cart).forEach(id => { if (products[id]) cart[id].price = products[id].price; });
+      saveCartToStorage();
+      renderProducts();
+      Object.keys(products).forEach(id => updateProductUI(id));
+      updateCartBar();
+      if (typeof updateCheckoutSummary === 'function') updateCheckoutSummary();
+    }
+
+    // Olib ketishda tanlangan filialning holati; dostavkada — umumiy holat (aniq filialni server yaqinligiga qarab topadi)
+    function computeShopState() {
+      const d = shopData || {};
+      let closed = !d.open, msg = d.message || '', stop = Array.isArray(d.stoplist) ? d.stoplist : [];
+      const brs = Array.isArray(d.branches) ? d.branches : [];
+      if (selectedDelivery === 'pickup' && brs.length) {
+        const sel = document.getElementById('branchSelect');
+        const b = brs.find(x => sel && x.id === sel.value) || brs[0];
+        closed = b.open === false;
+        msg = b.message || '';
+        stop = Array.isArray(b.stoplist) ? b.stoplist : [];
+      }
+      shopClosed = closed; shopMessage = msg; stopList = new Set(stop);
     }
 
     function applyShopStatus() {
@@ -2124,7 +2251,8 @@
     async function confirmOrder() {
       if (isSubmitting) return;
 
-      const phone = document.getElementById('phoneInput').value.trim();
+      const phoneDigits = document.getElementById('phoneInput').value.replace(/\D/g, '');
+      const phone = phoneDigits.length === 9 ? '+998' + phoneDigits : '+' + phoneDigits;
       const address = document.getElementById('addressInput').value.trim();
       const submitBtn = document.getElementById('submitOrderBtn');
 
@@ -2133,8 +2261,12 @@
         return;
       }
 
-      if (!phone) {
+      if (!phoneDigits) {
         alert("Iltimos, telefon raqamingizni kiriting!");
+        return;
+      }
+      if (phoneDigits.length < 9 || phoneDigits.length > 12) {
+        alert("Telefon raqami noto'g'ri. Masalan: 998901234567");
         return;
       }
 
@@ -2175,7 +2307,9 @@
         address: selectedDelivery === 'delivery' ? address : '',
         location: (selectedDelivery === 'delivery' && userLocation) ? userLocation : null,
         payment: selectedPayment,
-        note: document.getElementById('noteInput').value.trim().slice(0, 200)
+        branch: selectedDelivery === 'pickup' ? (document.getElementById('branchSelect').value || '') : '',
+        note: document.getElementById('noteInput').value.trim().slice(0, 200),
+        promo: (document.getElementById('promoInput').value || '').trim()
       };
 
       try {
@@ -2205,6 +2339,9 @@
 
         try { localStorage.setItem('street_dog_checkout', JSON.stringify({ phone: phone, address: address, payment: selectedPayment })); } catch (e) {}
         document.getElementById('noteInput').value = '';
+        document.getElementById('promoInput').value = '';
+        document.getElementById('promoMsg').textContent = '';
+        promo = null;
         closeCheckoutModal();
         showSuccess(data.order_no || data.order_id);
       } catch (err) {

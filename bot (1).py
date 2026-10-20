@@ -22,6 +22,7 @@ import json
 import logging
 import math
 import os
+import random
 import re
 import shutil
 import socket
@@ -125,8 +126,16 @@ def env_int_list(name: str, default: str) -> list:
 #  ⚠️ Bu faylni hech kimga yubormang va internetga (GitHub) yuklamang —
 #     ichida bot tokeni bor.
 # =====================================================================
-BOT_TOKEN = '8983485871:AAErGK9UHLKIiP9ShCV6eKShozOfzz8CIiI'  # @BotFather bergan token
-ADMIN_IDS = [6069854654,6048997378]  # admin(lar) Telegram ID si
+BOT_TOKEN = '8983485871:AAEItnJAPmd2xQJx7ON72SOQsu_egvYgsvU'  # @BotFather bergan token
+# ---- ROLLAR ----
+# SUPER ADMIN (egasi): HAMMA buyruq — statistika, hisobot, mijozlar bazasi, xabar yuborish va h.k.
+# ADMIN (menejer/kassir): faqat kerakli buyruqlar — /ochish /yopish /stop /chek va buyurtma tugmalari.
+# ⚠️ O'z Telegram ID ingizni SUPER_ADMIN_IDS ga yozing (ID ni @userinfobot dan bilib olasiz).
+SUPER_ADMIN_IDS = [6069854654]   # super admin(lar)
+ADMIN_IDS = [6048997378]         # oddiy admin(lar)
+STAFF_IDS = SUPER_ADMIN_IDS + [i for i in ADMIN_IDS if i not in SUPER_ADMIN_IDS]  # barcha xodimlar (filial adminlari ham shu yerga qo'shiladi)
+# Filial adminlari: har bir filialga BRANCHES ichida "admin_ids" yoziladi (pastda). Admin FAQAT o'z filialining buyurtmalarini ko'radi.
+SUPER_SEES_ALL = True   # True = super admin (egasi) HAMMA filial buyurtmalarini ko'radi. False = faqat o'zi biriktirilgan filiallarni
 COURIER_CHAT_ID = -5491727953  # kuryerlar guruhi ID si (ixtiyoriy)
 
 CONTACT_PHONE = '+998 91 966 40 40'
@@ -135,16 +144,74 @@ WORK_HOURS = '24/7 (har kuni, kechayu-kunduz)'
 CAFE_LAT = None  # kafe lokatsiyasi (ixtiyoriy)
 CAFE_LON = None
 
+# ---- "Sizni sog'indik" xabari (/qaytarish) va promokodlar ----
+# Matnda ishlatiladi: {hello} {percent} {code} {days}. HTML teglar (<b>, <code>) ishlaydi.
+WINBACK_TEXT = (
+    "👋 {hello} sog'indik!\n\n"
+    "Street Dog'da sizni mazali buyurtma kutmoqda. Faqat siz uchun — <b>{percent}% chegirma</b>! 🎁\n\n"
+    "Promokod: <code>{code}</code>\n"
+    "Amal qilish muddati: {days} kun.\n\n"
+    "Ilovada buyurtma berayotganda promokodni kiriting 👇"
+)
+
+# ---- AVTOMATIK "Sizni sog'indik" (promokodsiz, chegirmasiz) ----
+# Bot har kuni AUTO_WINBACK_TIME da o'zi tekshiradi: oxirgi buyurtmasiga AUTO_WINBACK_DAYS kundan ko'p bo'lgan
+# har bir mijozga chiroyli "sog'indik" xabari yuboradi. Yoqish/o'chirish botdan ham mumkin: /avto on  |  /avto off
+AUTO_WINBACK = True                # True = yoqilgan
+AUTO_WINBACK_DAYS = 15             # shuncha kundan beri buyurtma bermaganlarga yuboriladi
+AUTO_WINBACK_TIME = "18:15"        # xabarlar har kuni aynan shu vaqtda yuboriladi (SS:DD)
+AUTO_WINBACK_LATE_MIN = 120        # bot shu vaqtda o'chiq bo'lib, keyin yonsa: shuncha daqiqagacha kechiksa ham yuboradi, undan keyin ertaga
+AUTO_WINBACK_COOLDOWN_DAYS = 30    # bir mijozga qayta yuborishdan oldin kamida shuncha kun kutiladi
+AUTO_WINBACK_MAX_TIMES = 2         # bitta "yo'qolish" davrida bir mijozga eng ko'pi bilan necha marta yuboriladi
+AUTO_WINBACK_MAX_PER_DAY = 300     # kuniga eng ko'pi bilan nechta xabar
+AUTO_WINBACK_INCLUDE_NEVER = False  # True = hech qachon buyurtma bermagan (lekin 15 kundan beri botda bor) mijozlarga ham
+
+# Har safar shu matnlardan biri tasodifiy tanlanadi. {intro} — "oxirgi buyurtmadan N kun o'tdi" va sevimli taomi (bor bo'lsa).
+AUTO_WINBACK_TEXTS = [
+    "👋 {hello} sog'indik!\n\n{intro}"
+    "Street Dog'da sizni doim kutamiz. Bugun kechqurun o'zingizni mazali burger yoki xot-dog bilan xursand qiling! 🍔🌭\n\n"
+    "Buyurtma berish uchun pastdagi tugmani bosing 👇",
+    "🥺 {hello} juda sog'indik!\n\n{intro}"
+    "Oshpazlarimiz ham sizni kutib qolishdi. Qaytib keling — o'sha mazali ta'm yana sizni kutmoqda! 🍔\n\n"
+    "Menyuni ochish uchun tugmani bosing 👇",
+    "🌭 {hello} sog'indik!\n\n{intro}"
+    "Kun charchoq bo'ldimi? Kechki ovqatni biz tayyorlab, issiq-issiq yetkazib beramiz! 🛵🔥\n\n"
+    "Buyurtma berish uchun tugmani bosing 👇",
+]
+
 # ---- CHEK PRINTER (XPrinter va boshqa termoprinterlar) ----
-PRINTER_ENABLED = True  # yangi buyurtma kelganda chek avtomatik chiqadi. O'chirish: False
+PRINTER_ENABLED = False  # yangi buyurtma kelganda chek avtomatik chiqadi. O'chirish: False
 PRINTER_NAME = ""       # Windows'dagi printer nomi. Bo'sh qoldirsangiz — Windows'ning standart printeri
 PRINTER_IP = ""         # LAN/Wi-Fi printer bo'lsa uning IP si, masalan "192.168.1.50" (USB bo'lsa bo'sh)
 PRINTER_PORT = 9100
 PRINTER_WIDTH = 48      # 80 mm qog'oz = 48, 58 mm qog'oz = 32
+# Har filialga alohida printer: BRANCHES ichida filialga "printer_ip" (LAN/Wi-Fi printer) yoki "printer_name" (shu kompyuterga
+# ulangan printerning Windows'dagi nomi) yoziladi; kerak bo'lsa "printer_port" va "printer_width" ham. Yozilmasa — yuqoridagi umumiy printer.
 CAFE_NAME = "STREET DOG"
 
 # ---- DOSTAVKA ----
 DELIVERY_FEE = 10000  # dostavka narxi (so'm), taxminan 5 km gacha. Olib ketishda 0.
+# ---- FILIALLAR (ixtiyoriy) ----
+# Bo'sh ro'yxat = bitta kafe (hammasi avvalgidek ishlaydi). Filial qo'shsangiz:
+#  • Dostavka: mijoz joylashuviga ENG YAQIN filial avtomatik tanlanadi.
+#  • Eng yaqin filialdan ham MAX_DELIVERY_KM dan uzoq bo'lsa — dostavka qabul qilinmaydi.
+#  • Olib ketish: mijoz filialni o'zi tanlaydi.
+#  • Buyurtma shu filial kuryerlar guruhiga (courier_chat_id) boradi; yo'q bo'lsa — umumiy COURIER_CHAT_ID ga.
+# Koordinatani Google Maps'da filial ustini bosib olasiz (masalan 41.5500, 60.6300).
+BRANCHES = []
+# BRANCHES = [
+#     {"id": "markaz", "name": "Markaz filiali", "lat": 41.5500, "lon": 60.6300, "courier_chat_id": None, "admin_ids": [111111111]},
+#     {"id": "sharq",  "name": "Sharq filiali",  "lat": 41.5700, "lon": 60.6600, "courier_chat_id": None, "admin_ids": [222222222]},
+# ]
+# "id" — faqat lotin harf/raqam (masalan "markaz"), ":" va bo'sh joy bo'lmasin.
+# "admin_ids" — shu filial buyurtmalarini oladigan va boshqaradigan adminlarning Telegram ID lari (bir nechta bo'lishi mumkin).
+# Admin boshqa filial buyurtmasini ko'rmaydi va tugmalarini bosa olmaydi,
+# /ochish /yopish /stop ham faqat o'z filiali uchun ishlaydi (super admin — hamma filial uchun). "admin_ids" bo'sh bo'lsa — buyurtma hamma adminga boradi.
+MAX_DELIVERY_KM = 7   # eng yaqin filialdan shuncha km dan uzoqqa dostavka yo'q (0 = cheklov yo'q). Masofa to'g'ri chiziq bo'yicha.
+for _br in BRANCHES:  # filial adminlari ham xodim hisoblanadi (buyruqlar, tugmalar uchun)
+    for _aid in (_br.get("admin_ids") or []):
+        if _aid not in STAFF_IDS:
+            STAFF_IDS.append(_aid)
 
 # ---- SMENA HISOBOTI ----
 COMMISSION_PERCENT = 5          # savdodan sizning ulushingiz (foiz)
@@ -152,11 +219,23 @@ NEW_PRODUCTS = []               # "Yangi" belgisi qo'yiladigan taom kodlari, mas
 HIT_MIN_SOLD = 3                # 30 kunda kamida shuncha dona sotilgan eng yaxshi 5 ta taom "Hit" bo'ladi
 REVIEW_URL = ""                # Google Maps sharh havolasi: 5 baho bergan mijozga yuboriladi (bo'sh = yuborilmaydi)
 LOW_RATING_MAX = 2              # shu baho va undan past bo'lsa adminga shoshilinch ogohlantirish
-NEW_ORDER_ALERT_MIN = 10        # yangi buyurtma shuncha daqiqa qabul qilinmasa, adminga ogohlantirish
+NEW_ORDER_ALERT_MIN = 3         # yangi buyurtma shuncha daqiqa qabul qilinmasa, adminga birinchi ogohlantirish
+NEW_ORDER_REMIND_EVERY_MIN = 3  # qabul qilinmaguncha shuncha daqiqada bir marta qayta eslatiladi
+NEW_ORDER_REMIND_MAX = 10       # eng ko'pi bilan nechta eslatma (cheksiz xabar yuborib yubormaslik uchun)
+
+# ---- ZAXIRA NUSXA va BOT TO'XTASA OGOHLANTIRISH ----
+BACKUP_ENABLED = True           # har kuni baza nusxasi Telegramga yuboriladi (fayl yoki papka kerak emas)
+BACKUP_TIME = "04:00"           # har kuni shu vaqtdan keyin (kompyuter o'chiq bo'lsa — yonganda darrov) yuboriladi
+BACKUP_CHAT_IDS: list = []      # bo'sh bo'lsa — super adminlarga. Boshqa joyga ham yuborish uchun ID larni yozing
+HEALTH_SELF_CHECK = True        # bot ilovaning internetdan ochilishini har 2 daqiqada tekshiradi, uzilsa sizga yozadi
+# Kompyuter yoki internet butunlay o'chsa, bot o'zi xabar yubora olmaydi — buning uchun TASHQI nazoratchi kerak:
+# healthchecks.io da tekin akkaunt oching → "Add Check" (Period: 1 minute, Grace: 3 minutes) → Integrations'dan Telegram'ni ulang →
+# check manzilini (https://hc-ping.com/....) shu yerga yozing. Bot har daqiqada "tirikman" deb yozib turadi, to'xtasa — Telegramga xabar keladi.
+HEALTH_URL = "https://hc-ping.com/7fc012e4-62da-45fd-88e4-6b4c8b609825"
 AUTO_SCHEDULE = False           # WORK_HOURS bo'yicha o'zi ochiladi/yopiladi (qo'lda /ochish /yopish keyingi ochilish/yopilishgacha ishlaydi)
 SMENA_HISOBOT_VAQTI = "23:00"   # hisobot har kuni shu vaqtda o'zi yuboriladi (SS:DD)
-HISOBOT_IDS = []                # hisobot kimga borsin (Telegram ID). Bo'sh bo'lsa — ADMIN_IDS ga
-REPORT_IDS = HISOBOT_IDS or ADMIN_IDS
+HISOBOT_IDS = []                # hisobot kimga borsin (Telegram ID). Bo'sh bo'lsa — faqat SUPER_ADMIN_IDS ga
+REPORT_IDS = HISOBOT_IDS or SUPER_ADMIN_IDS
 
 # Ilova manzili ODATDA bo'sh qoladi: bot internetga chiqish manzilini (cloudflared)
 # o'zi topadi va "Open App" tugmasiga o'zi qo'yadi. Faqat doimiy hosting/domeningiz
@@ -260,10 +339,20 @@ TRANSITIONS = {
 
 DEFAULT_CLOSED_MESSAGE = "Hozir buyurtma qabul qilinmaydi. Iltimos, keyinroq urinib ko'ring."
 
+
+def default_closed_text() -> str:
+    """Yopiq paytda mijozga ko'rinadigan xabar. WORK_HOURS "10:00-23:00" ko'rinishida bo'lsa — ish vaqti ham yoziladi."""
+    rng = _work_range()
+    if rng:
+        a = f"{rng[0] // 60:02d}:{rng[0] % 60:02d}"
+        b = f"{rng[1] // 60:02d}:{rng[1] % 60:02d}"
+        return f"⏰ Ish vaqtimiz tugadi. Biz har kuni {a} dan {b} gacha ishlaymiz. Shu vaqtda buyurtma bering — sizni kutamiz! 😊"
+    return DEFAULT_CLOSED_MESSAGE
+
 NO_PREVIEW = LinkPreviewOptions(is_disabled=True)
 
-ADMIN_HELP = (
-    "<b>🛠 Admin buyruqlari</b>\n"
+SUPER_HELP = (
+    "<b>👑 Super admin buyruqlari</b>\n"
     "/ochish — buyurtma qabul qilishni ochish\n"
     "/yopish [izoh] — buyurtma qabul qilishni to'xtatish\n"
     "/stop — stop-list (tugagan taomlarni o'chirish/yoqish)\n"
@@ -274,8 +363,25 @@ ADMIN_HELP = (
     "/hisobot — joriy smena hisoboti\n"
     "/smena — smenani yopish va hisobotni yuborish\n"
     "/mijozlar — mijozlar soni va eng faollari\n"
-    "/eksport — mijozlar ro'yxatini fayl (Excel) qilib olish"
+    "/eksport — mijozlar ro'yxatini fayl (Excel) qilib olish\n"
+    "/avto — avtomatik «Sizni sog'indik» holati (/avto on · /avto off)"
 )
+ADMIN_HELP = (
+    "<b>🛠 Admin buyruqlari</b>\n"
+    "/ochish — buyurtma qabul qilishni ochish\n"
+    "/yopish [izoh] — buyurtma qabul qilishni to'xtatish\n"
+    "/stop — stop-list (tugagan taomlarni o'chirish/yoqish)\n"
+    "/chek [raqam] — chekni qayta chiqarish (raqamsiz — sinov cheki)\n"
+    "Buyurtmani bekor qilsangiz, sababini yozasiz — u mijozga yuboriladi."
+)
+
+
+def help_for(user_id) -> str:
+    if user_id in SUPER_ADMIN_IDS:
+        return SUPER_HELP
+    if user_id in STAFF_IDS:
+        return ADMIN_HELP
+    return ""
 
 
 # =====================================================================
@@ -329,6 +435,60 @@ def db() -> sqlite3.Connection:
     return _db
 
 
+# ---- filiallar ----
+def _km(lat1, lon1, lat2, lon2) -> float:
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2
+    return 2 * 6371.0 * math.asin(math.sqrt(a))
+
+
+def find_branch(branch_id):
+    for br in BRANCHES:
+        if br["id"] == branch_id:
+            return br
+    return None
+
+
+def nearest_branch(lat: float, lon: float):
+    """(eng yaqin filial, masofa km) qaytaradi."""
+    best = min(BRANCHES, key=lambda br: _km(lat, lon, br["lat"], br["lon"]))
+    return best, _km(lat, lon, best["lat"], best["lon"])
+
+
+def branch_name(branch_id) -> str:
+    br = find_branch(branch_id)
+    return br["name"] if br else (branch_id or "")
+
+
+def branch_label(order, with_km: bool = False) -> str:
+    br = find_branch(order["branch"])
+    if not br:
+        return ""
+    if with_km and order["delivery_type"] == "delivery" and order["lat"] is not None and order["lon"] is not None:
+        return f"{br['name']} · {_km(order['lat'], order['lon'], br['lat'], br['lon']):.1f} km"
+    return br["name"]
+
+
+def branch_courier_chat(branch_id):
+    br = find_branch(branch_id)
+    return (br.get("courier_chat_id") if br else None) or COURIER_CHAT_ID
+
+
+def order_staff(order) -> list:
+    """Shu buyurtmani ko'rishi va boshqarishi mumkin bo'lgan adminlar (faqat o'z filiali)."""
+    br = find_branch(order["branch"]) if order["branch"] else None
+    ids = list(br.get("admin_ids") or []) if br else []
+    if not ids:  # filialga admin biriktirilmagan (yoki filial yo'q) — avvalgidek hammaga
+        return list(STAFF_IDS)
+    if SUPER_SEES_ALL:
+        ids += [i for i in SUPER_ADMIN_IDS if i not in ids]
+    return ids
+
+
+def can_handle(user_id: int, order) -> bool:
+    return user_id in order_staff(order)
+
+
 def init_db() -> None:
     db().executescript(
         """
@@ -376,13 +536,62 @@ def init_db() -> None:
         CREATE TABLE IF NOT EXISTS stoplist (
             product_id TEXT PRIMARY KEY
         );
+        CREATE TABLE IF NOT EXISTS promo_codes (
+            code        TEXT PRIMARY KEY,
+            percent     INTEGER NOT NULL,
+            valid_until INTEGER NOT NULL,
+            user_id     INTEGER,
+            max_uses    INTEGER,
+            used        INTEGER NOT NULL DEFAULT 0,
+            active      INTEGER NOT NULL DEFAULT 1,
+            note        TEXT NOT NULL DEFAULT '',
+            created_at  INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS promo_uses (
+            code       TEXT NOT NULL,
+            user_id    INTEGER NOT NULL,
+            order_id   INTEGER NOT NULL,
+            created_at INTEGER NOT NULL,
+            PRIMARY KEY (code, user_id)
+        );
+        CREATE TABLE IF NOT EXISTS banned (
+            kind       TEXT NOT NULL,
+            value      TEXT NOT NULL,
+            label      TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL,
+            PRIMARY KEY (kind, value)
+        );
+        CREATE TABLE IF NOT EXISTS custom_products (
+            id         TEXT PRIMARY KEY,
+            category   TEXT NOT NULL,
+            name       TEXT NOT NULL,
+            price      INTEGER NOT NULL,
+            descr      TEXT NOT NULL DEFAULT '',
+            file_id    TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS price_overrides (
+            product_id TEXT PRIMARY KEY,
+            price      INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS branch_stoplist (
+            branch_id  TEXT NOT NULL,
+            product_id TEXT NOT NULL,
+            PRIMARY KEY (branch_id, product_id)
+        );
         """
     )
+    load_custom_products()  # admin /yangi bilan qo'shgan taomlar (stop-list tozalashdan OLDIN yuklanadi)
     # Menyudan olib tashlangan taomlar stop-listda qolib ketmasin
     db().execute(
         "DELETE FROM stoplist WHERE product_id NOT IN (%s)" % ",".join("?" * len(PRODUCTS)),
         tuple(PRODUCTS),
     )
+    db().execute(
+        "DELETE FROM branch_stoplist WHERE product_id NOT IN (%s)" % ",".join("?" * len(PRODUCTS)),
+        tuple(PRODUCTS),
+    )
+    apply_price_overrides()
     try:  # eski bazalar uchun: kunlik buyurtma raqami ustuni
         db().execute("ALTER TABLE orders ADD COLUMN day_no INTEGER")
     except sqlite3.OperationalError:
@@ -392,6 +601,8 @@ def init_db() -> None:
             db().execute("ALTER TABLE orders ADD COLUMN " + col)
         except sqlite3.OperationalError:
             pass
+    db().execute("CREATE TABLE IF NOT EXISTS winback_log (user_id INTEGER NOT NULL, sent_at INTEGER NOT NULL)")  # avtomatik «sog'indik» tarixi
+    db().execute("CREATE INDEX IF NOT EXISTS idx_winback_user ON winback_log (user_id)")
     db().execute("CREATE TABLE IF NOT EXISTS courier_loc (user_id INTEGER PRIMARY KEY, lat REAL, lon REAL, updated_at INTEGER)")
     db().execute("CREATE TABLE IF NOT EXISTS couriers (user_id INTEGER PRIMARY KEY, phone TEXT NOT NULL)")
     try:  # eski bazalar uchun: mijoz izohi ustuni
@@ -400,6 +611,22 @@ def init_db() -> None:
         pass
     try:  # eski bazalar uchun: dostavka haqi ustuni
         db().execute("ALTER TABLE orders ADD COLUMN delivery_fee INTEGER NOT NULL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+    for _ddl in (
+        "ALTER TABLE orders ADD COLUMN discount INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE orders ADD COLUMN promo TEXT",
+    ):
+        try:  # eski bazalar uchun: chegirma va promokod ustunlari
+            db().execute(_ddl)
+        except sqlite3.OperationalError:
+            pass
+    try:  # eski bazalar uchun: bekor qilish sababi
+        db().execute("ALTER TABLE orders ADD COLUMN cancel_reason TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:  # eski bazalar uchun: filial ustuni
+        db().execute("ALTER TABLE orders ADD COLUMN branch TEXT")
     except sqlite3.OperationalError:
         pass
 
@@ -423,17 +650,50 @@ def is_open() -> bool:
 
 
 def closed_message() -> str:
-    return get_setting("closed_message", "") or DEFAULT_CLOSED_MESSAGE
+    return get_setting("closed_message", "") or default_closed_text()
 
 
-# ---- stop-list ----
-def get_stoplist() -> set:
-    return {r["product_id"] for r in db().execute("SELECT product_id FROM stoplist")}
+# ---- filial bo'yicha ochiq/yopiq (umumiy "is_open" — bosh kalit, u yopiq bo'lsa hamma filial yopiq) ----
+def branch_is_open(branch_id) -> bool:
+    return is_open() and get_setting(f"is_open:{branch_id}", "1") == "1"
 
 
-def toggle_stop(product_id: str) -> bool:
+def branch_closed_message(branch_id) -> str:
+    if not is_open():
+        return closed_message()
+    return get_setting(f"closed_message:{branch_id}", "") or default_closed_text()
+
+
+def any_open() -> bool:
+    """Kamida bitta filial (yoki filialsiz bo'lsa — kafe) ochiqmi."""
+    return any(branch_is_open(b["id"]) for b in BRANCHES) if BRANCHES else is_open()
+
+
+def any_closed_message() -> str:
+    if BRANCHES and is_open():
+        return branch_closed_message(BRANCHES[0]["id"])
+    return closed_message()
+
+
+# ---- stop-list (branch_id berilsa — shu filial uchun, bo'lmasa — umumiy) ----
+def get_stoplist(branch_id=None) -> set:
+    if branch_id:
+        rows = db().execute("SELECT product_id FROM branch_stoplist WHERE branch_id=?", (branch_id,))
+    else:
+        rows = db().execute("SELECT product_id FROM stoplist")
+    return {r["product_id"] for r in rows}
+
+
+def toggle_stop(product_id: str, branch_id=None) -> bool:
     """True qaytarsa — mahsulot endi O'CHIRILGAN (tugagan)."""
     conn = db()
+    if branch_id:
+        row = conn.execute("SELECT 1 FROM branch_stoplist WHERE branch_id=? AND product_id=?", (branch_id, product_id)).fetchone()
+        if row:
+            conn.execute("DELETE FROM branch_stoplist WHERE branch_id=? AND product_id=?", (branch_id, product_id))
+            return False
+        conn.execute("INSERT INTO branch_stoplist (branch_id, product_id) VALUES (?, ?)", (branch_id, product_id))
+        return True
     row = conn.execute("SELECT 1 FROM stoplist WHERE product_id=?", (product_id,)).fetchone()
     if row:
         conn.execute("DELETE FROM stoplist WHERE product_id=?", (product_id,))
@@ -442,8 +702,179 @@ def toggle_stop(product_id: str) -> bool:
     return True
 
 
-def clear_stoplist() -> None:
-    db().execute("DELETE FROM stoplist")
+def clear_stoplist(branch_id=None) -> None:
+    if branch_id:
+        db().execute("DELETE FROM branch_stoplist WHERE branch_id=?", (branch_id,))
+    else:
+        db().execute("DELETE FROM stoplist")
+
+
+# ---- promokodlar ----
+_PROMO_TRIES: dict = {}
+_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+
+
+def norm_code(raw) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "", str(raw or "")).upper()[:20]
+
+
+def promo_check(raw_code, user_id: int, subtotal: int):
+    """(promo_qatori, chegirma_summasi, xato_matni). Kod bo'sh bo'lsa — (None, 0, None)."""
+    code = norm_code(raw_code)
+    if not code:
+        return None, 0, None
+    conn = db()
+    row = conn.execute("SELECT * FROM promo_codes WHERE code=?", (code,)).fetchone()
+    if not row or not row["active"]:
+        return None, 0, "Promokod topilmadi. Tekshirib, qaytadan kiriting."
+    if row["valid_until"] < int(time.time()):
+        return None, 0, "Bu promokodning muddati tugagan."
+    if row["user_id"] and row["user_id"] != user_id:
+        return None, 0, "Bu promokod boshqa mijoz uchun."
+    if row["max_uses"] and row["used"] >= row["max_uses"]:
+        return None, 0, "Bu promokodning limiti tugagan."
+    if conn.execute("SELECT 1 FROM promo_uses WHERE code=? AND user_id=?", (code, user_id)).fetchone():
+        return None, 0, "Siz bu promokodni allaqachon ishlatgansiz."
+    discount = int(subtotal * row["percent"] / 100) // 100 * 100
+    return row, discount, None
+
+
+def promo_consume(code: str, user_id: int, order_id: int) -> None:
+    conn = db()
+    conn.execute(
+        "INSERT OR IGNORE INTO promo_uses (code, user_id, order_id, created_at) VALUES (?,?,?,?)",
+        (code, user_id, order_id, int(time.time())),
+    )
+    conn.execute("UPDATE promo_codes SET used = used + 1 WHERE code=?", (code,))
+
+
+def promo_release(order_id: int) -> None:
+    """Kafe o'zi buyurtmani bekor qilsa, mijozning promokodi qaytariladi."""
+    conn = db()
+    row = conn.execute("SELECT code FROM promo_uses WHERE order_id=?", (order_id,)).fetchone()
+    if row:
+        conn.execute("DELETE FROM promo_uses WHERE order_id=?", (order_id,))
+        conn.execute("UPDATE promo_codes SET used = MAX(used - 1, 0) WHERE code=?", (row["code"],))
+
+
+def order_exists(user_id: int, client_id) -> bool:
+    if not client_id:
+        return False
+    return bool(db().execute("SELECT 1 FROM orders WHERE user_id=? AND client_id=?", (user_id, client_id)).fetchone())
+
+
+def order_discount(order) -> int:
+    try:
+        return int(order["discount"] or 0)
+    except (IndexError, KeyError, TypeError, ValueError):
+        return 0
+
+
+def new_personal_code(percent: int, valid_days: int, user_id: int, note: str = "winback") -> str:
+    import random
+    conn = db()
+    while True:
+        code = "S" + "".join(random.choice(_CODE_ALPHABET) for _ in range(7))
+        if not conn.execute("SELECT 1 FROM promo_codes WHERE code=?", (code,)).fetchone():
+            break
+    now = int(time.time())
+    conn.execute(
+        "INSERT INTO promo_codes (code, percent, valid_until, user_id, max_uses, note, created_at) VALUES (?,?,?,?,1,?,?)",
+        (code, percent, now + valid_days * 86400, user_id, note, now),
+    )
+    return code
+
+
+# ---- bloklangan mijozlar (soxta buyurtmalarga qarshi) ----
+def phone_key(phone) -> str:
+    """Telefon raqamning oxirgi 9 raqami: +998 90 123 45 67, 901234567, 998901234567 — hammasi bir xil."""
+    d = re.sub(r"\D", "", str(phone or ""))
+    return d[-9:] if len(d) >= 9 else d
+
+
+def ban(kind: str, value: str, label: str = "") -> None:
+    db().execute(
+        "INSERT INTO banned (kind, value, label, created_at) VALUES (?,?,?,?) "
+        "ON CONFLICT(kind, value) DO UPDATE SET label=excluded.label",
+        (kind, str(value), label[:200], int(time.time())),
+    )
+
+
+def unban(kind: str, value: str) -> int:
+    return db().execute("DELETE FROM banned WHERE kind=? AND value=?", (kind, str(value))).rowcount
+
+
+def is_banned(user_id=None, phone=None) -> bool:
+    conn = db()
+    if user_id is not None and conn.execute("SELECT 1 FROM banned WHERE kind='user' AND value=?", (str(user_id),)).fetchone():
+        return True
+    key = phone_key(phone) if phone else ""
+    if key and conn.execute("SELECT 1 FROM banned WHERE kind='phone' AND value=?", (key,)).fetchone():
+        return True
+    return False
+
+
+# ---- admin /yangi bilan qo'shgan taomlar ----
+_DISH_IMG_CACHE: dict = {}
+
+
+def clean_text(value, limit: int) -> str:
+    """Ilovada HTML/JS ni buzadigan belgilarni olib tashlaydi."""
+    t = re.sub(r"\s+", " ", str(value or "")).strip()
+    t = re.sub(r'["<>\\&`]', "", t)
+    return t[:limit].strip()
+
+
+def load_custom_products() -> None:
+    for r in db().execute("SELECT * FROM custom_products ORDER BY created_at, id"):
+        PRODUCTS[r["id"]] = {
+            "category": r["category"], "name": r["name"], "price": int(r["price"]),
+            "custom": True, "desc": r["descr"] or "", "file_id": r["file_id"] or "",
+        }
+
+
+def add_custom_product(category: str, name: str, price: int, desc: str, file_id: str) -> str:
+    n = int(time.time())
+    while f"n{n}" in PRODUCTS:
+        n += 1
+    pid = f"n{n}"
+    db().execute(
+        "INSERT INTO custom_products (id, category, name, price, descr, file_id, created_at) VALUES (?,?,?,?,?,?,?)",
+        (pid, category, name, int(price), desc, file_id or "", int(time.time())),
+    )
+    PRODUCTS[pid] = {"category": category, "name": name, "price": int(price), "custom": True, "desc": desc, "file_id": file_id or ""}
+    return pid
+
+
+def delete_custom_product(pid: str) -> bool:
+    """Faqat admin qo'shgan taomni o'chiradi (asosiy menyu taomlari o'chmaydi — ularni stop-listga qo'ying)."""
+    if not PRODUCTS.get(pid, {}).get("custom"):
+        return False
+    conn = db()
+    conn.execute("DELETE FROM custom_products WHERE id=?", (pid,))
+    conn.execute("DELETE FROM price_overrides WHERE product_id=?", (pid,))
+    conn.execute("DELETE FROM stoplist WHERE product_id=?", (pid,))
+    conn.execute("DELETE FROM branch_stoplist WHERE product_id=?", (pid,))
+    PRODUCTS.pop(pid, None)
+    _DISH_IMG_CACHE.pop(pid, None)
+    return True
+
+
+# ---- narxlarni bot orqali o'zgartirish (/narx) ----
+def apply_price_overrides() -> None:
+    """Bazada saqlangan narxlarni PRODUCTS ga qo'llaydi (bot qayta yonganda ham saqlanib qoladi)."""
+    for r in db().execute("SELECT product_id, price FROM price_overrides"):
+        if r["product_id"] in PRODUCTS:
+            PRODUCTS[r["product_id"]]["price"] = int(r["price"])
+
+
+def set_price(product_id: str, price: int) -> None:
+    db().execute(
+        "INSERT INTO price_overrides (product_id, price) VALUES (?, ?) "
+        "ON CONFLICT(product_id) DO UPDATE SET price=excluded.price",
+        (product_id, int(price)),
+    )
+    PRODUCTS[product_id]["price"] = int(price)
 
 
 # ---- foydalanuvchilar ----
@@ -463,7 +894,7 @@ def mark_blocked(user_id: int) -> None:
 
 
 # ---- buyurtmalar ----
-def create_order(user: dict, client_id, phone, delivery, address, lat, lon, payment, items, total, delivery_fee=0, note=None):
+def create_order(user: dict, client_id, phone, delivery, address, lat, lon, payment, items, total, delivery_fee=0, note=None, branch=None, discount=0, promo=None):
     """(order_id, total, yangi_yaratildimi) qaytaradi."""
     conn = db()
     uid = user["id"]
@@ -477,8 +908,8 @@ def create_order(user: dict, client_id, phone, delivery, address, lat, lon, paym
     day_no = next_order_no(now)  # hisoblash va yozish orasida await yo'q — raqamlar takrorlanmaydi
     cur = conn.execute(
         "INSERT INTO orders (client_id, user_id, username, full_name, phone, delivery_type, "
-        "address, lat, lon, payment, items_json, total, status, created_at, updated_at, day_no, delivery_fee, note) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?)",
+        "address, lat, lon, payment, items_json, total, status, created_at, updated_at, day_no, delivery_fee, note, branch, discount, promo) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             client_id,
             uid,
@@ -497,6 +928,9 @@ def create_order(user: dict, client_id, phone, delivery, address, lat, lon, paym
             day_no,
             delivery_fee,
             note,
+            branch,
+            discount,
+            promo,
         ),
     )
     return cur.lastrowid, total, True
@@ -728,9 +1162,11 @@ def order_text(order) -> str:
     parts = [
         f"🛒 <b>BUYURTMA #{order_no(order)}</b>",
         f"📌 Holat: <b>{esc(status_label(order))}</b>",
+        *([f"📝 Bekor sababi: <i>{esc(order['cancel_reason'])}</i>"] if order["status"] == "cancelled" and order["cancel_reason"] else []),
         "",
         f"👤 Mijoz: {customer}",
         f"📞 Tel: {esc(order['phone'])}",
+        *([f"🏪 Filial: <b>{esc(branch_label(order, True))}</b>"] if order["branch"] and branch_label(order) else []),
         f"🚚 Turi: {'Dostavka 🛵' if is_delivery else 'Olib ketish 🏃‍♂️'}",
         f"📍 Manzil: {esc(order['address']) if is_delivery else 'Olib ketish (kafe joyidan)'}",
     ]
@@ -746,6 +1182,7 @@ def order_text(order) -> str:
         "📦 <b>Buyurtma tarkibi:</b>",
         *lines,
         *([f"🛵 Dostavka: {fmt_money(order_fee(order))} so'm"] if order_fee(order) else []),
+        *([f"🎁 Chegirma ({esc(order['promo'])}): −{fmt_money(order_discount(order))} so'm"] if order_discount(order) else []),
         "",
         f"💵 <b>Jami: {fmt_money(order['total'])} so'm</b>",
         f"🕒 {fmt_time(order['created_at'])}",
@@ -766,9 +1203,11 @@ def receipt_text(order) -> str:
             "",
             *lines,
             *([f"🛵 Dostavka: {fmt_money(order_fee(order))} so'm"] if order_fee(order) else []),
+            *([f"🎁 Chegirma ({esc(order['promo'])}): −{fmt_money(order_discount(order))} so'm"] if order_discount(order) else []),
             "",
             f"💵 <b>Jami: {fmt_money(order['total'])} so'm</b>",
             f"🚚 {'Dostavka 🛵' if is_delivery else 'Olib ketish 🏃‍♂️'}",
+            *([f"🏪 Filial: {esc(branch_label(order))}"] if order["branch"] and branch_label(order) else []),
             f"💳 {esc(order['payment'])}",
             "",
             "Buyurtma holati o'zgarganda sizga xabar beramiz. 😊",
@@ -796,6 +1235,8 @@ def admin_keyboard(order):
     else:
         return None
     rows.append([_btn("❌ Bekor qilish", f"cq:{oid}")])
+    if status == "new":
+        rows.append([_btn("🚫 Bloklash (soxta buyurtma)", f"bl:{oid}")])
     return InlineKeyboardMarkup(rows)
 
 
@@ -808,9 +1249,21 @@ def courier_keyboard(order):
     return InlineKeyboardMarkup([[_btn("✔️ Yetkazildi", f"cd:{oid}")]])
 
 
+# Bekor qilishda admin sabab tanlaydi — sabab mijozga yuboriladi
+CANCEL_REASONS = {
+    "nop": "buyurtmangizdagi mahsulot hozir mavjud emas",
+    "nom": "kerakli masalliq hozir tugagan",
+}
+
+
 def cancel_confirm_keyboard(order_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
-        [[_btn("✅ Ha, bekor qilish", f"st:{order_id}:cancelled"), _btn("↩️ Yo'q", f"cb:{order_id}")]]
+        [
+            [_btn("📦 Mahsulot yo'q", f"cx:{order_id}:nop")],
+            [_btn("🥩 Masalliq yo'q", f"cx:{order_id}:nom")],
+            [_btn("✍️ Boshqa sabab yozish", f"cx:{order_id}:oth")],
+            [_btn("↩️ Orqaga", f"cb:{order_id}")],
+        ]
     )
 
 
@@ -835,9 +1288,11 @@ def customer_status_text(order):
             return f"✔️ Buyurtmangiz #{oid} yetkazildi. Yoqimli ishtaha! 😋"
         return f"✔️ Buyurtmangiz #{oid} topshirildi. Yoqimli ishtaha! 😋"
     if status == "cancelled":
+        reason = (order["cancel_reason"] or "").strip()
         return (
             f"❌ Afsuski, buyurtmangiz #{oid} bekor qilindi.\n"
-            f"Savollar bo'lsa, bog'laning: {esc(CONTACT_PHONE)}"
+            + (f"📝 Sabab: {esc(reason)}\n" if reason else "")
+            + f"Savollar bo'lsa, bog'laning: {esc(CONTACT_PHONE)}"
         )
     return None
 
@@ -854,9 +1309,10 @@ async def notify_new_order(bot, order_id: int) -> None:
         order["delivery_type"] == "delivery" and order["lat"] is not None and order["lon"] is not None
     )
 
-    targets = [(admin_id, "admin") for admin_id in ADMIN_IDS]
-    if COURIER_CHAT_ID is not None:
-        targets.append((COURIER_CHAT_ID, "courier"))
+    targets = [(admin_id, "admin") for admin_id in order_staff(order)]
+    courier_chat = branch_courier_chat(order["branch"])
+    if courier_chat is not None:
+        targets.append((courier_chat, "courier"))
 
     for chat_id, kind in targets:
         markup = admin_keyboard(order) if kind == "admin" else courier_keyboard(order)
@@ -872,7 +1328,7 @@ async def notify_new_order(bot, order_id: int) -> None:
             f"⚠️ Buyurtma #{order_no(order)}: mijozga bot xabar yubora olmadi "
             f"(botni Start qilmagan bo'lishi mumkin). Telefon orqali bog'laning: {esc(order['phone'])}"
         )
-        for admin_id in ADMIN_IDS:
+        for admin_id in order_staff(order):
             await safe_send(bot, admin_id, warn)
 
 
@@ -905,7 +1361,27 @@ async def notify_customer_status(bot, order) -> None:
 # =====================================================================
 ESC = b"\x1b"
 GS = b"\x1d"
-_print_lock = threading.Lock()
+_print_locks: dict = {}
+_print_locks_guard = threading.Lock()
+
+
+def _lock_for(target: str) -> threading.Lock:
+    """Har printer uchun alohida qulf: bitta printer o'chiq bo'lsa, boshqa filial cheki kutib qolmaydi."""
+    with _print_locks_guard:
+        return _print_locks.setdefault(target, threading.Lock())
+
+
+def _printer_for(branch_id):
+    """(ip, port, windows_nomi) — filialning o'z printeri bo'lsa o'shani, bo'lmasa umumiy printerni qaytaradi."""
+    br = find_branch(branch_id) if branch_id else None
+    if br and (br.get("printer_ip") or br.get("printer_name")):
+        return br.get("printer_ip") or "", int(br.get("printer_port") or PRINTER_PORT), br.get("printer_name") or ""
+    return PRINTER_IP, PRINTER_PORT, PRINTER_NAME
+
+
+def _printer_width(branch_id) -> int:
+    br = find_branch(branch_id) if branch_id else None
+    return int((br or {}).get("printer_width") or PRINTER_WIDTH)
 
 _CYR = {
     "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "yo", "ж": "j",
@@ -966,7 +1442,7 @@ class _Chek:
 
 
 def build_chek(order) -> bytes:
-    W = max(PRINTER_WIDTH, 20)
+    W = max(_printer_width(order["branch"]), 20)
     items = json.loads(order["items_json"])
     is_delivery = order["delivery_type"] == "delivery"
     c = _Chek()
@@ -1006,6 +1482,9 @@ def build_chek(order) -> bytes:
     if order_fee(order):
         for ln in _lr("Dostavka", fmt_money(order_fee(order)), W):
             c.line(ln)
+    if order_discount(order):
+        for ln in _lr("Chegirma " + str(order["promo"] or ""), "-" + fmt_money(order_discount(order)), W):
+            c.line(ln)
     c.line("-" * W)
     c.bold(True)
     c.size(0x11)
@@ -1020,8 +1499,8 @@ def build_chek(order) -> bytes:
     return c.finish()
 
 
-def build_test_chek() -> bytes:
-    W = max(PRINTER_WIDTH, 20)
+def build_test_chek(branch_id=None) -> bytes:
+    W = max(_printer_width(branch_id), 20)
     c = _Chek()
     c.align(1)
     c.bold(True)
@@ -1029,6 +1508,8 @@ def build_test_chek() -> bytes:
     c.line(CAFE_NAME)
     c.size(0x00)
     c.bold(False)
+    if branch_id:
+        c.line(branch_name(branch_id))
     c.line("SINOV CHEKI")
     c.line("-" * W)
     c.line("Printer ishlayapti!")
@@ -1095,17 +1576,18 @@ def _print_windows(data: bytes, printer_name: str) -> str:
     return printer_name
 
 
-def send_to_printer(data: bytes) -> str:
-    """Chekni printerga yuboradi (bloklaydi). Qaysi printerga ketganini qaytaradi."""
-    with _print_lock:
-        if PRINTER_IP:
-            with socket.create_connection((PRINTER_IP, PRINTER_PORT), timeout=5) as sock:
+def send_to_printer(data: bytes, branch_id=None) -> str:
+    """Chekni (filialning) printeriga yuboradi (bloklaydi). Qaysi printerga ketganini qaytaradi."""
+    ip, port, name = _printer_for(branch_id)
+    with _lock_for(f"{ip}:{port}" if ip else f"win:{name}"):
+        if ip:
+            with socket.create_connection((ip, port), timeout=5) as sock:
                 sock.settimeout(10)
                 sock.sendall(data)
-            return f"{PRINTER_IP}:{PRINTER_PORT}"
+            return f"{ip}:{port}"
         if os.name == "nt":
-            return _print_windows(data, PRINTER_NAME)
-        raise OSError("Bu kompyuter Windows emas. LAN printer uchun PRINTER_IP ni yozing.")
+            return _print_windows(data, name)
+        raise OSError("Bu kompyuter Windows emas. LAN printer uchun printer_ip (yoki PRINTER_IP) ni yozing.")
 
 
 async def print_order_chek(bot, order_id: int) -> None:
@@ -1116,14 +1598,14 @@ async def print_order_chek(bot, order_id: int) -> None:
         return
     try:
         data = build_chek(order)
-        await asyncio.get_running_loop().run_in_executor(None, send_to_printer, data)
+        await asyncio.get_running_loop().run_in_executor(None, send_to_printer, data, order["branch"])
     except Exception as exc:
         log.warning("Chek chiqmadi (#%s): %s", order_no(order), exc)
         warn = (
             f"⚠️ Chek chiqmadi (buyurtma #{order_no(order)}): {esc(exc)}\n"
             f"Printerni tekshirib, /chek {order_no(order)} bilan qayta chiqaring."
         )
-        for admin_id in ADMIN_IDS:
+        for admin_id in order_staff(order):
             await safe_send(bot, admin_id, warn)
 
 
@@ -1202,15 +1684,41 @@ def hit_products() -> list:
 
 
 async def api_status(request):
+    if BRANCHES:
+        infos = []
+        for br in BRANCHES:
+            o = branch_is_open(br["id"])
+            infos.append({
+                "id": br["id"], "name": br["name"], "open": o,
+                "message": "" if o else branch_closed_message(br["id"]),
+                "stoplist": sorted(get_stoplist(br["id"])),
+            })
+        opened = any(i["open"] for i in infos)
+        message = "" if opened else any_closed_message()
+        # Umumiy ko'rinish: hech bo'lmasa bitta filial ochiq bo'lsa — ochiq; taom hamma filialda tugagan bo'lsagina "tugagan"
+        stoplist = sorted(set.intersection(*[set(i["stoplist"]) for i in infos]))
+    else:
+        infos = []
+        opened, message, stoplist = is_open(), ("" if is_open() else closed_message()), sorted(get_stoplist())
     return web.json_response(
         {
             "hits": hit_products(),
             "new": [p for p in NEW_PRODUCTS if p in PRODUCTS],
             "ok": True,
-            "open": is_open(),
-            "message": "" if is_open() else closed_message(),
-            "stoplist": sorted(get_stoplist()),
+            "open": opened,
+            "message": message,
+            "stoplist": stoplist,
             "delivery_fee": DELIVERY_FEE,
+            "prices": {pid: p["price"] for pid, p in PRODUCTS.items()},
+            "custom_products": [
+                {
+                    "id": pid, "category": p["category"], "price": p["price"],
+                    "name": p["name"].replace("'", "’"), "desc": (p.get("desc") or "").replace("'", "’"),
+                    "img": (f"/api/dish_img/{pid}?v={hashlib.md5(p['file_id'].encode()).hexdigest()[:8]}" if p.get("file_id") else ""),
+                }
+                for pid, p in PRODUCTS.items() if p.get("custom")
+            ],
+            "branches": infos,
         }
     )
 
@@ -1250,6 +1758,10 @@ async def api_order(request):
             401,
         )
 
+    if is_banned(user_id=user["id"]):
+        log.info("Bloklangan mijoz buyurtma berishga urindi: %s", user["id"])
+        return jerr("Kechirasiz, buyurtmangizni hozir qabul qila olmaymiz.", 403, code="banned")
+
     if not is_open():
         return jerr(closed_message(), 403, code="closed")
 
@@ -1274,16 +1786,6 @@ async def api_order(request):
     if any(c > 50 for c in merged.values()):
         return jerr("Bitta mahsulotdan 50 tadan ko'p buyurtma berib bo'lmaydi.")
 
-    stopped = get_stoplist()
-    unavailable = [PRODUCTS[p]["name"] for p in merged if p in stopped]
-    if unavailable:
-        names = ", ".join(sorted(set(unavailable)))
-        return jerr(
-            f"Afsuski, quyidagi taomlar hozircha tugagan: {names}. Iltimos, savatdan olib tashlang.",
-            409,
-            code="stop",
-        )
-
     items = []
     total = 0
     for pid, count in merged.items():
@@ -1296,6 +1798,9 @@ async def api_order(request):
     digits = re.sub(r"\D", "", phone)
     if not (9 <= len(digits) <= 15):
         return jerr("Telefon raqami noto'g'ri. Masalan: +998 90 123 45 67")
+    if is_banned(phone=phone):
+        log.info("Bloklangan telefon bilan buyurtma urinishi: %s", phone_key(phone))
+        return jerr("Kechirasiz, buyurtmangizni hozir qabul qila olmaymiz.", 403, code="banned")
 
     delivery = body.get("delivery")
     if delivery not in ("delivery", "pickup"):
@@ -1310,7 +1815,41 @@ async def api_order(request):
     else:
         address = ""
 
+    branch = None
+    if BRANCHES:
+        if delivery == "delivery":
+            if lat is None:
+                return jerr("Eng yaqin filialni aniqlash uchun joylashuvingizni yuboring.", code="no_location")
+            near, km = nearest_branch(lat, lon)
+            if MAX_DELIVERY_KM and km > MAX_DELIVERY_KM:
+                return jerr(
+                    f"Kechirasiz, manzilingiz eng yaqin filialimizdan ({near['name']}) {km:.1f} km uzoqda — "
+                    "dostavka hududidan tashqarida. Olib ketishni tanlashingiz mumkin.",
+                    422,
+                    code="too_far",
+                )
+            branch = near["id"]
+        else:
+            branch = str(body.get("branch", "")).strip()
+            if not find_branch(branch):
+                return jerr("Olib ketish uchun filialni tanlang.", code="branch")
+
+    # --- shu filial ochiqmi va savatdagi taomlar shu filialda bormi ---
+    if branch and not branch_is_open(branch):
+        return jerr(f"{branch_name(branch)}: {branch_closed_message(branch)}", 403, code="closed")
+    stopped = get_stoplist(branch)
+    unavailable = [PRODUCTS[p]["name"] for p in merged if p in stopped]
+    if unavailable:
+        names = ", ".join(sorted(set(unavailable)))
+        where = f" ({branch_name(branch)})" if branch else ""
+        return jerr(
+            f"Afsuski, quyidagi taomlar hozircha tugagan{where}: {names}. Iltimos, savatdan olib tashlang.",
+            409,
+            code="stop",
+        )
+
     delivery_fee = DELIVERY_FEE if delivery == "delivery" else 0
+    items_total = total
     total += delivery_fee
 
     payment = body.get("payment")
@@ -1324,17 +1863,31 @@ async def api_order(request):
     if recent_order_count(user["id"], 600) >= 10:
         return jerr("Juda ko'p buyurtma yuborildi. Birozdan keyin urinib ko'ring.", 429)
 
+    # --- promokod (tekshiruv va yozib qo'yish orasida await yo'q — bir kodni ikki marta ishlatib bo'lmaydi) ---
+    promo_row, discount, promo_code = None, 0, None
+    raw_promo = str(body.get("promo", "")).strip()
+    if raw_promo and not order_exists(user["id"], client_id):
+        promo_row, discount, perr = promo_check(raw_promo, user["id"], items_total)
+        if perr:
+            return jerr(perr, 400, code="promo")
+        if promo_row:
+            promo_code = promo_row["code"]
+            total -= discount
+
     upsert_user(user["id"], user["username"], user["full_name"])
     order_id, order_total, created = create_order(
-        user, client_id, phone, delivery, address or None, lat, lon, payment, items, total, delivery_fee, note
+        user, client_id, phone, delivery, address or None, lat, lon, payment, items, total, delivery_fee, note, branch,
+        discount, promo_code,
     )
+    if created and promo_row:
+        promo_consume(promo_code, user["id"], order_id)
     if created:
         # Buyurtma bazaga saqlandi. Telegramga yuborish orqada ketadi —
         # Telegram band bo'lsa ham mijoz xatolik ko'rmaydi.
         spawn(notify_new_order(request.app["bot"], order_id))
         spawn(print_order_chek(request.app["bot"], order_id))
     return web.json_response(
-        {"ok": True, "order_id": order_id, "order_no": order_no(get_order(order_id)), "total": order_total}
+        {"ok": True, "order_id": order_id, "order_no": order_no(get_order(order_id)), "total": order_total, "branch": branch_name(branch)}
     )
 
 
@@ -1399,6 +1952,46 @@ async def api_avatar(request):
     return web.Response(body=data, content_type="image/jpeg", headers={"Cache-Control": "private, max-age=3600"})
 
 
+async def api_promo_check(request):
+    """Mijoz promokodni kiritganda chegirma foizini ko'rsatadi (buyurtma berilmaydi, kod ishlatilmaydi)."""
+    body = await read_json(request)
+    if body is None:
+        return jerr("So'rov noto'g'ri formatda.")
+    user = validate_init_data(str(body.get("init_data", "")), BOT_TOKEN)
+    if not user:
+        return jerr("Telegram orqali tasdiqlanmadi.", 401)
+    now = time.time()
+    tries = [t for t in _PROMO_TRIES.get(user["id"], []) if now - t < 600]
+    if len(tries) >= 12:
+        return jerr("Juda ko'p urinish. Birozdan keyin qaytadan kiriting.", 429)
+    tries.append(now)
+    _PROMO_TRIES[user["id"]] = tries
+    row, _disc, err = promo_check(body.get("code", ""), user["id"], 0)
+    if err or not row:
+        return jerr(err or "Promokodni kiriting.", 400, code="promo")
+    return web.json_response({"ok": True, "code": row["code"], "percent": row["percent"]})
+
+
+async def api_dish_img(request):
+    """Admin /yangi orqali yuborgan taom rasmini Telegramdan olib beradi."""
+    pid = request.match_info.get("pid", "")
+    p = PRODUCTS.get(pid)
+    if not p or not p.get("file_id"):
+        return web.Response(status=404)
+    data = _DISH_IMG_CACHE.get(pid)
+    if data is None:
+        try:
+            tg_file = await request.app["bot"].get_file(p["file_id"])
+            data = bytes(await tg_file.download_as_bytearray())
+        except Exception as exc:
+            log.warning("Taom rasmini olib bo'lmadi (%s): %s", pid, exc)
+            return web.Response(status=502)
+        if len(_DISH_IMG_CACHE) > 100:
+            _DISH_IMG_CACHE.clear()
+        _DISH_IMG_CACHE[pid] = data
+    return web.Response(body=data, content_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
+
+
 def build_web_app(bot) -> web.Application:
     app = web.Application(middlewares=[cors_middleware], client_max_size=64 * 1024)
     app["bot"] = bot
@@ -1408,8 +2001,10 @@ def build_web_app(bot) -> web.Application:
     app.router.add_post("/api/order", api_order)
     app.router.add_post("/api/my_orders", api_my_orders)
     app.router.add_post("/api/avatar", api_avatar)
+    app.router.add_post("/api/promo_check", api_promo_check)
+    app.router.add_get("/api/dish_img/{pid}", api_dish_img)
     app.router.add_post("/api/track", api_track)
-    for path in ("/api/status", "/api/order", "/api/my_orders", "/api/avatar", "/api/track"):
+    for path in ("/api/status", "/api/order", "/api/my_orders", "/api/avatar", "/api/track", "/api/promo_check"):
         app.router.add_route("OPTIONS", path, api_options)
     return app
 
@@ -1443,6 +2038,15 @@ async def on_any_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Mijoz botga istalgan xabar yozsa, ilovani ochish tugmasini yuboramiz."""
     if not update.message or not update.effective_user:
         return
+    if update.effective_user.id in SUPER_ADMIN_IDS and context.application.bot_data.get("dish_wait", {}).get(update.effective_user.id):
+        await handle_dish_text(update, context)
+        return
+    if update.effective_user.id in SUPER_ADMIN_IDS and context.application.bot_data.get("price_wait", {}).get(update.effective_user.id):
+        await handle_price_text(update, context)
+        return
+    if update.effective_user.id in STAFF_IDS and context.application.bot_data.get("cancel_wait", {}).get(update.effective_user.id):
+        await handle_cancel_reason_text(update, context)
+        return
     upsert_user(update.effective_user.id, update.effective_user.username, update.effective_user.full_name)
     await refresh_menu_button(context.bot, update.effective_chat.id)
     await update.message.reply_text(
@@ -1463,10 +2067,10 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Xush kelibsiz, <b>{esc(nickname)}</b>! 👋\n\n"
         "Buyurtma berish uchun pastdagi <b>«Menyu»</b> tugmasini (yoki chap pastdagi <b>'Open App'</b> ni) bosing."
     )
-    if not is_open():
-        text += f"\n\n⛔ {esc(closed_message())}"
-    if user.id in ADMIN_IDS:
-        text += "\n\n" + ADMIN_HELP
+    if not any_open():
+        text += f"\n\n⛔ {esc(any_closed_message())}"
+    if help_for(user.id):
+        text += "\n\n" + help_for(user.id)
     await update.message.reply_text(
         text, parse_mode=ParseMode.HTML, reply_markup=open_app_markup() or ReplyKeyboardRemove()
     )
@@ -1482,8 +2086,8 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📍 /manzil — manzilimiz\n"
         "Buyurtma holati o'zgarsa, shu yerda xabar olasiz."
     )
-    if update.effective_user and update.effective_user.id in ADMIN_IDS:
-        text += "\n\n" + ADMIN_HELP
+    if update.effective_user and help_for(update.effective_user.id):
+        text += "\n\n" + help_for(update.effective_user.id)
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
@@ -1493,7 +2097,7 @@ async def cmd_aloqa(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lines = ["<b>📞 Aloqa</b>", f"Telefon: {esc(CONTACT_PHONE)}", f"Manzil: {esc(CAFE_ADDRESS)}"]
     if WORK_HOURS:
         lines.append(f"Ish vaqti: {esc(WORK_HOURS)}")
-    lines.append("Holat: " + ("🟢 Ochiqmiz" if is_open() else "🔴 Hozir yopiqmiz"))
+    lines.append("Holat: " + ("🟢 Ochiqmiz" if any_open() else "🔴 Hozir yopiqmiz"))
     await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
 
 
@@ -1514,65 +2118,378 @@ def admin_only(handler):
     @functools.wraps(handler)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
-        if not user or user.id not in ADMIN_IDS:
+        if not user or user.id not in STAFF_IDS:
             return
         return await handler(update, context)
 
     return wrapper
 
 
+def super_only(handler):
+    """Faqat super admin (egasi) uchun buyruqlar."""
+    @functools.wraps(handler)
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user = update.effective_user
+        if not user or user.id not in SUPER_ADMIN_IDS:
+            return
+        return await handler(update, context)
+
+    return wrapper
+
+
+def branches_of(user_id: int) -> list:
+    """Shu admin ochish/yopish va stop-listni boshqara oladigan filiallar (filial bo'lmasa — bo'sh)."""
+    if not BRANCHES:
+        return []
+    if user_id in SUPER_ADMIN_IDS:
+        return list(BRANCHES)
+    return [b for b in BRANCHES if user_id in (b.get("admin_ids") or []) or not b.get("admin_ids")]
+
+
+def _set_branch_state(branch_ids, open_: bool, note: str = "") -> str:
+    names = []
+    for bid in branch_ids:
+        set_setting(f"is_open:{bid}", "1" if open_ else "0")
+        set_setting(f"closed_message:{bid}", "" if open_ else note)
+        names.append(branch_name(bid))
+    if open_:  # umumiy (bosh) yopilish qolib ketgan bo'lsa, uni ham yechamiz
+        set_setting("is_open", "1")
+        set_setting("closed_message", "")
+    return ", ".join(names)
+
+
+def _openclose_text(name: str, open_: bool, note: str = "") -> str:
+    if open_:
+        return f"🟢 {name}: buyurtma qabul qilish OCHILDI."
+    shown = note or default_closed_text()
+    return f"🔴 {name}: buyurtma qabul qilish YOPILDI.\nMijozlar ko'radigan xabar: {shown}\n\nQayta ochish: /ochish"
+
+
+async def _openclose_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE, open_: bool):
+    uid = update.effective_user.id
+    note = "" if open_ else (" ".join(context.args).strip()[:200] if context.args else "")
+    if not BRANCHES:  # filiallar yo'q — avvalgidek butun kafe
+        set_setting("is_open", "1" if open_ else "0")
+        set_setting("closed_message", "" if open_ else note)
+        await update.message.reply_text(
+            "🟢 Buyurtma qabul qilish OCHILDI." if open_ else _openclose_text("Kafe", False, note).replace("Kafe: ", "")
+        )
+        return
+    brs = branches_of(uid)
+    if not brs:
+        await update.message.reply_text("Sizga filial biriktirilmagan.")
+        return
+    if len(brs) == 1:
+        name = _set_branch_state([brs[0]["id"]], open_, note)
+        await update.message.reply_text(_openclose_text(name, open_, note))
+        return
+    context.application.bot_data.setdefault("close_note", {})[uid] = note
+    rows = [[_btn(f"🏪 {b['name']} " + ("🟢" if branch_is_open(b["id"]) else "🔴"), f"oc:{'o' if open_ else 'y'}:{b['id']}")] for b in brs]
+    rows.append([_btn("🏪 Hammasi", f"oc:{'o' if open_ else 'y'}:all")])
+    await update.message.reply_text(
+        ("Qaysi filialni OCHASIZ?" if open_ else "Qaysi filialni YOPASIZ?") + "\n(🟢 — hozir ochiq, 🔴 — hozir yopiq)",
+        reply_markup=InlineKeyboardMarkup(rows),
+    )
+
+
 @admin_only
 async def cmd_ochish(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    set_setting("is_open", "1")
-    set_setting("closed_message", "")
-    await update.message.reply_text("🟢 Buyurtma qabul qilish OCHILDI.")
+    await _openclose_cmd(update, context, True)
 
 
 @admin_only
 async def cmd_yopish(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    note = " ".join(context.args).strip()[:200] if context.args else ""
-    set_setting("is_open", "0")
-    set_setting("closed_message", note)
-    shown = note or DEFAULT_CLOSED_MESSAGE
-    await update.message.reply_text(
-        f"🔴 Buyurtma qabul qilish YOPILDI.\nMijozlar ko'radigan xabar: {shown}\n\n"
-        "Qayta ochish: /ochish"
-    )
+    await _openclose_cmd(update, context, False)
 
 
-def _stop_main_view():
-    stopped = get_stoplist()
+async def on_openclose_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = query.from_user.id
+    if uid not in STAFF_IDS:
+        await query.answer("Ruxsat yo'q", show_alert=True)
+        return
+    parts = query.data.split(":")  # oc:o|y:<filial id | all>
+    if len(parts) != 3 or parts[1] not in ("o", "y"):
+        await query.answer()
+        return
+    allowed = [b["id"] for b in branches_of(uid)]
+    ids = allowed if parts[2] == "all" else ([parts[2]] if parts[2] in allowed else [])
+    if not ids:
+        await query.answer("Bu filial sizniki emas.", show_alert=True)
+        return
+    open_ = parts[1] == "o"
+    note = "" if open_ else context.application.bot_data.get("close_note", {}).get(uid, "")
+    name = _set_branch_state(ids, open_, note)
+    await query.answer("Bajarildi ✅")
+    await _edit_callback_message(query, esc(_openclose_text(name, open_, note)), None)
+
+
+def _stop_pick_view(brs):
+    rows = [[_btn(f"🏪 {b['name']} ({len(get_stoplist(b['id']))} ta tugagan)", f"sl:b:{b['id']}")] for b in brs]
+    return "🍽 <b>Stop-list</b>\nQaysi filial uchun?", InlineKeyboardMarkup(rows)
+
+
+def _stop_main_view(branch=None):
+    br = branch or ""
+    stopped = get_stoplist(branch)
     rows = []
     for cat, label in CATEGORIES.items():
         off = sum(1 for pid in stopped if pid in PRODUCTS and PRODUCTS[pid]["category"] == cat)
         title = f"{label} ({off} ta tugagan)" if off else label
-        rows.append([_btn(title, f"sl:c:{cat}")])
+        rows.append([_btn(title, f"sl:c:{cat}:{br}")])
     if stopped:
-        rows.append([_btn("🔄 Hammasini yoqish", "sl:all")])
-    text = (
-        "🍽 <b>Stop-list</b>\n"
-        "Bo'limni tanlang. Tugagan taomni o'chirsangiz, ilovada «Tugagan» deb ko'rinadi."
-    )
+        rows.append([_btn("🔄 Hammasini yoqish", f"sl:all:{br}")])
+    head = "🍽 <b>Stop-list</b>" + (f" — 🏪 {esc(branch_name(branch))}" if branch else "")
+    text = head + "\nBo'limni tanlang. Tugagan taomni o'chirsangiz, ilovada «Tugagan» deb ko'rinadi."
     return text, InlineKeyboardMarkup(rows)
 
 
-def _stop_category_view(cat: str):
-    stopped = get_stoplist()
+def _stop_category_view(cat: str, branch=None):
+    br = branch or ""
+    stopped = get_stoplist(branch)
     rows = []
     for pid, product in PRODUCTS.items():
         if product["category"] != cat:
             continue
         mark = "⛔" if pid in stopped else "✅"
-        rows.append([_btn(f"{mark} {product['name']} · {fmt_money(product['price'])}", f"sl:t:{cat}:{pid}")])
-    rows.append([_btn("⬅️ Orqaga", "sl:m")])
-    text = f"{esc(CATEGORIES.get(cat, cat))}\n✅ — bor,  ⛔ — tugagan.\nBosib holatini almashtiring."
+        rows.append([_btn(f"{mark} {product['name']} · {fmt_money(product['price'])}", f"sl:t:{cat}:{pid}:{br}")])
+    rows.append([_btn("⬅️ Orqaga", f"sl:m:{br}")])
+    where = f" — 🏪 {esc(branch_name(branch))}" if branch else ""
+    text = f"{esc(CATEGORIES.get(cat, cat))}{where}\n✅ — bor,  ⛔ — tugagan.\nBosib holatini almashtiring."
     return text, InlineKeyboardMarkup(rows)
 
 
 @admin_only
 async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text, markup = _stop_main_view()
+    brs = branches_of(update.effective_user.id)
+    if BRANCHES and not brs:
+        await update.message.reply_text("Sizga filial biriktirilmagan.")
+        return
+    if len(brs) > 1:
+        text, markup = _stop_pick_view(brs)
+    else:
+        text, markup = _stop_main_view(brs[0]["id"] if brs else None)
     await update.message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
+
+
+def _price_cat_view():
+    rows = [[_btn(label, f"pr:c:{cat}")] for cat, label in CATEGORIES.items()]
+    return "💰 <b>Narxlar</b>\nBo'limni tanlang, keyin taomni bosib yangi narxini yozasiz.", InlineKeyboardMarkup(rows)
+
+
+def _price_list_view(cat: str):
+    rows = []
+    for pid, p in PRODUCTS.items():
+        if p["category"] == cat:
+            rows.append([_btn(f"{p['name']} · {fmt_money(p['price'])} so'm", f"pr:t:{pid}")])
+    rows.append([_btn("⬅️ Orqaga", "pr:m")])
+    return f"💰 {esc(CATEGORIES.get(cat, cat))}\nNarxini o'zgartirmoqchi bo'lgan taomni bosing.", InlineKeyboardMarkup(rows)
+
+
+@super_only
+async def cmd_narx(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.application.bot_data.setdefault("price_wait", {}).pop(update.effective_user.id, None)
+    context.application.bot_data.setdefault("dish_wait", {}).pop(update.effective_user.id, None)
+    text, markup = _price_cat_view()
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
+
+
+async def on_price_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = query.from_user.id
+    if uid not in SUPER_ADMIN_IDS:
+        await query.answer("Ruxsat yo'q", show_alert=True)
+        return
+    wait = context.application.bot_data.setdefault("price_wait", {})
+    parts = query.data.split(":")  # pr:m | pr:c:<cat> | pr:t:<pid>
+    action = parts[1] if len(parts) > 1 else ""
+    if action == "m":
+        wait.pop(uid, None)
+        text, markup = _price_cat_view()
+    elif action == "c" and len(parts) == 3 and parts[2] in CATEGORIES:
+        wait.pop(uid, None)
+        text, markup = _price_list_view(parts[2])
+    elif action == "t" and len(parts) == 3 and parts[2] in PRODUCTS:
+        p = PRODUCTS[parts[2]]
+        wait[uid] = parts[2]
+        await query.answer()
+        await _edit_callback_message(
+            query,
+            f"💰 <b>{esc(p['name'])}</b>\nHozirgi narx: <b>{fmt_money(p['price'])} so'm</b>\n\n"
+            "✍️ Yangi narxni raqam bilan yozing (so'mda), masalan: <code>80000</code>",
+            InlineKeyboardMarkup(
+                ([[_btn("🗑 Menyudan o'chirish", f"pr:x:{parts[2]}")]] if p.get("custom") else [])
+                + [[_btn("⬅️ Bekor qilish", f"pr:c:{p['category']}")]]
+            ),
+        )
+        return
+    elif action == "x" and len(parts) == 3 and PRODUCTS.get(parts[2], {}).get("custom"):
+        wait.pop(uid, None)
+        p = PRODUCTS[parts[2]]
+        await query.answer()
+        await _edit_callback_message(
+            query,
+            f"🗑 <b>{esc(p['name'])}</b> menyudan butunlay o'chirilsinmi?",
+            InlineKeyboardMarkup([[_btn("✅ Ha, o'chirish", f"pr:xx:{parts[2]}")], [_btn("⬅️ Yo'q", f"pr:c:{p['category']}")]]),
+        )
+        return
+    elif action == "xx" and len(parts) == 3 and PRODUCTS.get(parts[2], {}).get("custom"):
+        cat = PRODUCTS[parts[2]]["category"]
+        delete_custom_product(parts[2])
+        await query.answer("O'chirildi ✅")
+        text, markup = _price_list_view(cat)
+        await _edit_callback_message(query, text, markup)
+        return
+    else:
+        await query.answer()
+        return
+    await query.answer()
+    await _edit_callback_message(query, text, markup)
+
+
+async def handle_price_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    wait = context.application.bot_data.setdefault("price_wait", {})
+    pid = wait.get(uid)
+    if not pid or pid not in PRODUCTS:
+        wait.pop(uid, None)
+        return
+    digits = re.sub(r"[\s,._]", "", (update.message.text or ""))
+    if not digits.isdigit() or not (1000 <= int(digits) <= 10_000_000):
+        await update.message.reply_text("Narxni faqat raqam bilan yozing (1000 dan 10 000 000 gacha). Masalan: 80000")
+        return
+    old = PRODUCTS[pid]["price"]
+    set_price(pid, int(digits))
+    wait.pop(uid, None)
+    await update.message.reply_text(
+        f"✅ {PRODUCTS[pid]['name']}: {fmt_money(old)} → {fmt_money(int(digits))} so'm.\n"
+        "Ilovada 30 soniya ichida yangilanadi. Eski buyurtmalar narxi o'zgarmaydi.\n\n"
+        "Yana o'zgartirish: /narx"
+    )
+
+
+def _dish_summary(d: dict) -> str:
+    return (
+        "🆕 <b>Yangi taom</b>\n"
+        f"Bo'lim: {esc(CATEGORIES.get(d['cat'], d['cat']))}\n"
+        f"Nomi: <b>{esc(d['name'])}</b>\n"
+        f"Narxi: {fmt_money(d['price'])} so'm\n"
+        f"Tavsif: {esc(d['desc'] or '—')}\n"
+        f"Rasm: {'bor' if d.get('file_id') else 'yoq'}"
+    )
+
+
+def _dish_confirm_markup():
+    return InlineKeyboardMarkup([[_btn("✅ Menyuga qo'shish", "dn:ok")], [_btn("❌ Bekor qilish", "dn:x")]])
+
+
+def _dish_cancel_markup():
+    return InlineKeyboardMarkup([[_btn("❌ Bekor qilish", "dn:x")]])
+
+
+@super_only
+async def cmd_yangi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    context.application.bot_data.setdefault("price_wait", {}).pop(uid, None)
+    context.application.bot_data.setdefault("dish_wait", {})[uid] = {"step": "cat"}
+    rows = [[_btn(label, f"dn:c:{cat}")] for cat, label in CATEGORIES.items()] + [[_btn("❌ Bekor qilish", "dn:x")]]
+    await update.message.reply_text(
+        "🆕 <b>Yangi taom qo'shish</b>\nQaysi bo'limga qo'shamiz?",
+        parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(rows),
+    )
+
+
+async def handle_dish_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    d = context.application.bot_data.setdefault("dish_wait", {}).get(uid)
+    if not d:
+        return
+    text = update.message.text or ""
+    step = d["step"]
+    if step == "name":
+        name = clean_text(text, 60)
+        if len(name) < 2:
+            await update.message.reply_text("Taom nomini yozing (kamida 2 ta harf).")
+            return
+        d["name"], d["step"] = name, "price"
+        await update.message.reply_text("💰 Narxini yozing (so'mda), masalan: 45000", reply_markup=_dish_cancel_markup())
+    elif step == "price":
+        digits = re.sub(r"[\s,._]", "", text)
+        if not digits.isdigit() or not (1000 <= int(digits) <= 10_000_000):
+            await update.message.reply_text("Narxni faqat raqam bilan yozing (1000 dan 10 000 000 gacha). Masalan: 45000")
+            return
+        d["price"], d["step"] = int(digits), "desc"
+        await update.message.reply_text(
+            "📝 Qisqa tavsif yozing (tarkibi). Kerak bo'lmasa «-» deb yozing.", reply_markup=_dish_cancel_markup()
+        )
+    elif step == "desc":
+        d["desc"] = "" if text.strip() in ("-", "—") else clean_text(text, 200)
+        d["step"] = "photo"
+        await update.message.reply_text(
+            "🖼 Taom rasmini yuboring (rasm sifatida, fayl emas).",
+            reply_markup=InlineKeyboardMarkup([[_btn("Rasmsiz davom etish", "dn:skip")], [_btn("❌ Bekor qilish", "dn:x")]]),
+        )
+    elif step == "photo":
+        await update.message.reply_text("Rasm yuboring yoki «Rasmsiz davom etish» tugmasini bosing.")
+    else:
+        await update.message.reply_text("Pastdagi tugmalardan birini bosing.")
+
+
+async def on_dish_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user or update.effective_user.id not in SUPER_ADMIN_IDS:
+        return
+    d = context.application.bot_data.get("dish_wait", {}).get(update.effective_user.id)
+    if not d or d.get("step") != "photo":
+        return
+    d["file_id"], d["step"] = update.message.photo[-1].file_id, "confirm"
+    await update.message.reply_photo(
+        d["file_id"], caption=_dish_summary(d), parse_mode=ParseMode.HTML, reply_markup=_dish_confirm_markup()
+    )
+
+
+async def on_dish_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = query.from_user.id
+    if uid not in SUPER_ADMIN_IDS:
+        await query.answer("Ruxsat yo'q", show_alert=True)
+        return
+    waits = context.application.bot_data.setdefault("dish_wait", {})
+    d = waits.get(uid)
+    parts = query.data.split(":")  # dn:c:<cat> | dn:skip | dn:ok | dn:x
+    action = parts[1] if len(parts) > 1 else ""
+    if action == "x":
+        waits.pop(uid, None)
+        await query.answer()
+        try:
+            await query.edit_message_reply_markup(reply_markup=None)
+        except TelegramError:
+            pass
+        await context.bot.send_message(query.message.chat_id, "Bekor qilindi.")
+    elif action == "c" and len(parts) == 3 and parts[2] in CATEGORIES and d and d["step"] == "cat":
+        d["cat"], d["step"] = parts[2], "name"
+        await query.answer()
+        await _edit_callback_message(
+            query, f"{esc(CATEGORIES[parts[2]])}\n\n✍️ Taom nomini yozing:", _dish_cancel_markup()
+        )
+    elif action == "skip" and d and d["step"] == "photo":
+        d["file_id"], d["step"] = "", "confirm"
+        await query.answer()
+        await _edit_callback_message(query, _dish_summary(d), _dish_confirm_markup())
+    elif action == "ok" and d and d["step"] == "confirm":
+        pid = add_custom_product(d["cat"], d["name"], d["price"], d["desc"], d.get("file_id", ""))
+        waits.pop(uid, None)
+        await query.answer("Qo'shildi ✅")
+        try:
+            await query.edit_message_reply_markup(reply_markup=None)
+        except TelegramError:
+            pass
+        await context.bot.send_message(
+            query.message.chat_id,
+            f"✅ «{PRODUCTS[pid]['name']}» menyuga qo'shildi ({fmt_money(PRODUCTS[pid]['price'])} so'm).\n"
+            "Ilovada 30 soniya ichida paydo bo'ladi. Narxini o'zgartirish yoki o'chirish: /narx",
+        )
+    else:
+        await query.answer("Bu tugma eskirgan. /yangi dan qaytadan boshlang.", show_alert=True)
 
 
 async def _edit_callback_message(query, text: str, markup=None):
@@ -1585,28 +2502,38 @@ async def _edit_callback_message(query, text: str, markup=None):
 
 async def on_stop_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    if query.from_user.id not in ADMIN_IDS:
+    uid = query.from_user.id
+    if uid not in STAFF_IDS:
         await query.answer("Ruxsat yo'q", show_alert=True)
         return
     parts = query.data.split(":")
     action = parts[1] if len(parts) > 1 else ""
-    if action == "m":
-        text, markup = _stop_main_view()
+    # shakllar: sl:b:<br>  sl:m:<br>  sl:all:<br>  sl:c:<cat>:<br>  sl:t:<cat>:<pid>:<br>   (filial yo'q bo'lsa <br> bo'sh)
+    shapes = {"b": 3, "m": 3, "all": 3, "c": 4, "t": 5}
+    if action not in shapes or len(parts) != shapes[action]:
+        await query.answer()
+        return
+    branch = parts[-1] or None
+    allowed = [b["id"] for b in branches_of(uid)]
+    if (BRANCHES and branch not in allowed) or (not BRANCHES and branch):
+        await query.answer("Bu filial sizniki emas.", show_alert=True)
+        return
+    if action in ("b", "m"):
+        text, markup = _stop_main_view(branch)
     elif action == "all":
-        clear_stoplist()
-        text, markup = _stop_main_view()
-    elif action == "c" and len(parts) == 3 and parts[2] in CATEGORIES:
-        text, markup = _stop_category_view(parts[2])
+        clear_stoplist(branch)
+        text, markup = _stop_main_view(branch)
+    elif action == "c" and parts[2] in CATEGORIES:
+        text, markup = _stop_category_view(parts[2], branch)
     elif (
         action == "t"
-        and len(parts) == 4
         and parts[2] in CATEGORIES
         and parts[3] in PRODUCTS
         and PRODUCTS[parts[3]]["category"] == parts[2]
     ):
-        now_stopped = toggle_stop(parts[3])
+        now_stopped = toggle_stop(parts[3], branch)
         await query.answer("⛔ Tugagan deb belgilandi" if now_stopped else "✅ Yana mavjud")
-        text, markup = _stop_category_view(parts[2])
+        text, markup = _stop_category_view(parts[2], branch)
         await _edit_callback_message(query, text, markup)
         return
     else:
@@ -1616,7 +2543,7 @@ async def on_stop_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _edit_callback_message(query, text, markup)
 
 
-@admin_only
+@super_only
 async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(build_stats_text(), parse_mode=ParseMode.HTML)
 
@@ -1676,9 +2603,15 @@ def build_stats_text() -> str:
 
     users = conn.execute("SELECT COUNT(*) AS n, COALESCE(SUM(blocked), 0) AS b FROM users").fetchone()
     lines.append(f"👥 Mijozlar: {users['n']} ta (botni bloklaganlar: {users['b']})")
-    stopped = len(get_stoplist())
-    lines.append(f"⛔ Stop-listda: {stopped} ta taom")
-    lines.append("Holat: " + ("🟢 Ochiq" if is_open() else "🔴 Yopiq"))
+    if BRANCHES:
+        for br in BRANCHES:
+            lines.append(
+                f"🏪 {esc(br['name'])}: " + ("🟢 ochiq" if branch_is_open(br["id"]) else "🔴 yopiq")
+                + f" · stop-listda {len(get_stoplist(br['id']))} ta taom"
+            )
+    else:
+        lines.append(f"⛔ Stop-listda: {len(get_stoplist())} ta taom")
+        lines.append("Holat: " + ("🟢 Ochiq" if is_open() else "🔴 Yopiq"))
     return "\n".join(lines)
 
 
@@ -1687,7 +2620,7 @@ def report_only(handler):
     @functools.wraps(handler)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
-        if not user or (user.id not in ADMIN_IDS and user.id not in REPORT_IDS):
+        if not user or (user.id not in SUPER_ADMIN_IDS and user.id not in REPORT_IDS):
             return
         return await handler(update, context)
 
@@ -1784,22 +2717,28 @@ async def run_report_checks(bot, now: datetime, first_pass: bool = False) -> Non
         set_setting("last_report_ts", str(until))
 
 
-STUCK_ALERTED: set = set()
+STUCK_ALERTED: dict = {}  # buyurtma id -> (oxirgi eslatma vaqti, nechta eslatma yuborilgan)
 
 
 async def check_stuck_orders(bot) -> None:
-    limit = int(time.time()) - NEW_ORDER_ALERT_MIN * 60
+    now = int(time.time())
+    limit = now - NEW_ORDER_ALERT_MIN * 60
     rows = db().execute(
         "SELECT * FROM orders WHERE status='new' AND created_at<? AND created_at>?", (limit, limit - 6 * 3600)
     ).fetchall()
     for o in rows:
-        if o["id"] in STUCK_ALERTED:
+        last, n = STUCK_ALERTED.get(o["id"], (0, 0))
+        if n >= NEW_ORDER_REMIND_MAX:
             continue
-        STUCK_ALERTED.add(o["id"])
-        for admin_id in ADMIN_IDS:
+        if n and now - last < NEW_ORDER_REMIND_EVERY_MIN * 60:
+            continue
+        STUCK_ALERTED[o["id"]] = (now, n + 1)
+        mins = max(1, (now - o["created_at"]) // 60)
+        for admin_id in order_staff(o):
             await safe_send(
                 bot, admin_id,
-                f"⚠️ Buyurtma #{order_no(o)} {NEW_ORDER_ALERT_MIN} daqiqadan beri qabul qilinmadi!\n📞 {esc(o['phone'])}",
+                f"⚠️ Buyurtma #{order_no(o)} {mins} daqiqadan beri qabul qilinmadi! (eslatma {n + 1}/{NEW_ORDER_REMIND_MAX})\n"
+                f"📞 {esc(o['phone'])}\nBuyurtma xabaridagi «✅ Qabul qilish» tugmasini bosing.",
             )
 
 
@@ -1827,13 +2766,147 @@ def check_schedule(now: datetime) -> None:
         set_setting("closed_message", "")
     else:
         set_setting("is_open", "0")
-        set_setting("closed_message", f"Hozir yopiqmiz. Ish vaqti: {WORK_HOURS}")
+        set_setting("closed_message", "")  # bo'sh = default_closed_text() (ish vaqti bilan)
+
+
+_HEALTH: dict = {"last_ping": 0.0, "last_check": 0.0, "fails": 0, "alerted": False, "tunnel": "", "last_backup_try": 0.0}
+
+
+async def notify_super(bot, text: str) -> None:
+    for admin_id in SUPER_ADMIN_IDS:
+        await safe_send(bot, admin_id, text)
+
+
+def _http_ok(url: str, timeout: float = 8.0) -> bool:
+    import urllib.request
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "street-dog-bot"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return 200 <= resp.status < 400
+    except Exception:
+        return False
+
+
+def make_backup_file() -> Path:
+    """Bazaning izchil nusxasini vaqtinchalik faylga oladi (bot ishlab turgan bo'lsa ham xavfsiz)."""
+    tmp = BASE_DIR / f".zaxira_{int(time.time())}.db"
+    dst = sqlite3.connect(str(tmp))
+    try:
+        db().backup(dst)
+    finally:
+        dst.close()
+    return tmp
+
+
+async def send_backup(bot, reason: str = "avtomatik", chat_ids=None) -> bool:
+    """Baza nusxasini Telegramga yuboradi. Kamida bittasiga yetib borsa — True."""
+    import gzip
+    targets = list(chat_ids or BACKUP_CHAT_IDS or SUPER_ADMIN_IDS)
+    tmp = None
+    send_path = None
+    try:
+        tmp = make_backup_file()
+        send_path = tmp
+        stamp = datetime.now(LOCAL_TZ).strftime("%Y-%m-%d_%H%M")
+        name = f"street_dog_{stamp}.db"
+        if tmp.stat().st_size > 45 * 1024 * 1024:  # Telegram fayl chegarasi 50 MB — siqamiz
+            send_path = Path(str(tmp) + ".gz")
+            with open(tmp, "rb") as fin, gzip.open(send_path, "wb") as fout:
+                shutil.copyfileobj(fin, fout)
+            name += ".gz"
+        if send_path.stat().st_size > 49 * 1024 * 1024:
+            await notify_super(bot, "⚠️ Baza juda katta, Telegramga zaxira nusxa yuborib bo'lmadi. Bot papkasidagi street_dog.db ni qo'lda nusxalab oling.")
+            return False
+        conn = db()
+        n_orders = conn.execute("SELECT COUNT(*) AS n FROM orders").fetchone()["n"]
+        n_users = conn.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
+        caption = (
+            f"💾 Street Dog bazasi ({reason}) — {stamp.replace('_', ' ')}\n"
+            f"Buyurtmalar: {n_orders} · Mijozlar: {n_users}\n"
+            "Tiklash: botni to'xtating, bu faylni street_dog.db nomi bilan bot.py yoniga qo'ying (.gz bo'lsa avval arxivdan chiqaring), botni yoqing."
+        )
+        ok = False
+        for chat_id in targets:
+            try:
+                with open(send_path, "rb") as f:
+                    await tg_call(bot.send_document, chat_id=chat_id, document=f, filename=name, caption=caption)
+                ok = True
+            except TelegramError as exc:
+                log.warning("Zaxira nusxani %s ga yuborib bo'lmadi: %s", chat_id, exc)
+        return ok
+    except Exception:
+        log.exception("Zaxira nusxa olishda xato")
+        return False
+    finally:
+        for p in {tmp, send_path}:
+            try:
+                if p:
+                    Path(p).unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+async def check_backup(bot) -> None:
+    if not BACKUP_ENABLED:
+        return
+    try:
+        hh, mm = (int(x) for x in BACKUP_TIME.split(":"))
+        now = datetime.now(LOCAL_TZ)
+        if (now.hour, now.minute) < (hh, mm):
+            return
+        today = now.strftime("%Y-%m-%d")
+        if get_setting("last_backup_day") == today:
+            return
+        if time.time() - _HEALTH["last_backup_try"] < 600:  # muvaffaqiyatsiz bo'lsa, 10 daqiqada bir urinamiz
+            return
+        _HEALTH["last_backup_try"] = time.time()
+        if await send_backup(bot, "avtomatik"):
+            set_setting("last_backup_day", today)
+    except Exception:
+        log.exception("Zaxira rejasi xatosi")
+
+
+async def health_tick(bot) -> None:
+    try:
+        now = time.time()
+        loop = asyncio.get_running_loop()
+        if HEALTH_URL and now - _HEALTH["last_ping"] >= 60:
+            _HEALTH["last_ping"] = now
+            await loop.run_in_executor(None, _http_ok, HEALTH_URL)
+        base = (_HEALTH.get("tunnel") or "").rstrip("/")
+        if HEALTH_SELF_CHECK and base and now - _HEALTH["last_check"] >= 120:
+            _HEALTH["last_check"] = now
+            ok = await loop.run_in_executor(None, _http_ok, base + "/api/status")
+            if ok:
+                if _HEALTH["alerted"]:
+                    await notify_super(bot, "✅ Ilova internetdan yana ochilyapti. Buyurtmalar qabul qilinmoqda.")
+                _HEALTH["fails"], _HEALTH["alerted"] = 0, False
+            else:
+                _HEALTH["fails"] += 1
+                if _HEALTH["fails"] >= 2 and not _HEALTH["alerted"]:
+                    _HEALTH["alerted"] = True
+                    await notify_super(
+                        bot,
+                        "⚠️ Ilova internetdan OCHILMAYAPTI (internet yoki cloudflared uzilgan bo'lishi mumkin). "
+                        "Mijozlar buyurtma bera olmayapti.\nBotni qayta ishga tushiring (oynani yopib, bot.py ni qaytadan yoqing).",
+                    )
+    except Exception:
+        log.exception("Sog'liq tekshiruvi xatosi")
+
+
+@super_only
+async def cmd_zaxira(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("💾 Baza nusxasi tayyorlanmoqda...")
+    ok = await send_backup(context.bot, "qo'lda", chat_ids=[update.effective_user.id])
+    if not ok:
+        await update.message.reply_text("❌ Zaxira nusxani yuborib bo'lmadi. Bot oynasidagi xatoni tekshiring.")
 
 
 async def smena_scheduler(bot) -> None:
     first = True
     while True:
         try:
+            set_setting("last_alive", str(int(time.time())))
             check_schedule(datetime.now(LOCAL_TZ))
             await check_stuck_orders(bot)
             await run_report_checks(bot, datetime.now(LOCAL_TZ), first_pass=first)
@@ -1842,6 +2915,9 @@ async def smena_scheduler(bot) -> None:
             raise
         except Exception:
             log.exception("Smena hisoboti xatosi")
+        await check_backup(bot)
+        await check_auto_winback(bot)
+        await health_tick(bot)
         await asyncio.sleep(30)
 
 
@@ -1861,7 +2937,7 @@ async def cmd_smena(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("✅ Smena yopildi, hisobot yuborildi. Keyingi hisobot shu paytdan boshlab hisoblanadi.")
 
 
-@admin_only
+@super_only
 async def cmd_raqam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text(
@@ -1882,20 +2958,31 @@ async def cmd_chek(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not PRINTER_ENABLED:
         await update.message.reply_text("Printer o'chirilgan (bot.py da PRINTER_ENABLED = False).")
         return
+    loop = asyncio.get_running_loop()
     if context.args:
         arg = context.args[0].lstrip("#")
         order = find_order_by_no(int(arg)) if arg.isdigit() else None
         if not order:
             await update.message.reply_text("Bugun bunday raqamli buyurtma topilmadi. Masalan: /chek 5")
             return
-        data, label = build_chek(order), f"Buyurtma #{order_no(order)} cheki"
-    else:
-        data, label = build_test_chek(), "Sinov cheki"
-    try:
-        where = await asyncio.get_running_loop().run_in_executor(None, send_to_printer, data)
-        await update.message.reply_text(f"🖨 {label} printerga yuborildi ({where}).")
-    except Exception as exc:
-        await update.message.reply_text(f"❌ Chek chiqmadi: {exc}")
+        if not can_handle(update.effective_user.id, order):
+            await update.message.reply_text("Bu buyurtma sizning filialingizniki emas.")
+            return
+        try:
+            where = await loop.run_in_executor(None, send_to_printer, build_chek(order), order["branch"])
+            await update.message.reply_text(f"🖨 Buyurtma #{order_no(order)} cheki printerga yuborildi ({where}).")
+        except Exception as exc:
+            await update.message.reply_text(f"❌ Chek chiqmadi: {exc}")
+        return
+    # Sinov cheki: o'zi boshqaradigan har bir filialning printeriga (filial bo'lmasa — umumiy printerga)
+    targets = [b["id"] for b in branches_of(update.effective_user.id)] or [None]
+    for bid in targets:
+        label = f"Sinov cheki ({branch_name(bid)})" if bid else "Sinov cheki"
+        try:
+            where = await loop.run_in_executor(None, send_to_printer, build_test_chek(bid), bid)
+            await update.message.reply_text(f"🖨 {label} printerga yuborildi ({where}).")
+        except Exception as exc:
+            await update.message.reply_text(f"❌ {label} chiqmadi: {exc}")
 
 
 # ---- Mijozlar bazasi: /mijozlar va /eksport ----
@@ -1983,12 +3070,12 @@ def build_customers_summary() -> str:
     return "\n".join(lines)
 
 
-@admin_only
+@super_only
 async def cmd_mijozlar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(build_customers_summary(), parse_mode=ParseMode.HTML)
 
 
-@admin_only
+@super_only
 async def cmd_eksport(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = build_customers_csv()
     filename = f"mijozlar_{datetime.now(LOCAL_TZ).strftime('%Y-%m-%d')}.csv"
@@ -2001,7 +3088,7 @@ async def cmd_eksport(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ---- Broadcast ----
-@admin_only
+@super_only
 async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     parts = (update.message.text or "").split(maxsplit=1)
     text = parts[1].strip() if len(parts) > 1 else ""
@@ -2044,7 +3131,7 @@ async def run_broadcast(bot, admin_id: int, text: str) -> None:
 
 async def on_broadcast_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    if query.from_user.id not in ADMIN_IDS:
+    if query.from_user.id not in SUPER_ADMIN_IDS:
         await query.answer("Ruxsat yo'q", show_alert=True)
         return
     store = context.application.bot_data.setdefault("broadcast", {})
@@ -2066,7 +3153,7 @@ async def on_broadcast_callback(update: Update, context: ContextTypes.DEFAULT_TY
 # =====================================================================
 async def on_status_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    if query.from_user.id not in ADMIN_IDS:
+    if query.from_user.id not in STAFF_IDS:
         await query.answer("Ruxsat yo'q", show_alert=True)
         return
     try:
@@ -2078,6 +3165,17 @@ async def on_status_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     order = get_order(order_id)
     if not order:
         await query.answer("Buyurtma topilmadi", show_alert=True)
+        return
+    if not can_handle(query.from_user.id, order):
+        await query.answer("Bu buyurtma sizning filialingizniki emas.", show_alert=True)
+        return
+
+    if new_status == "cancelled":  # sababsiz bekor qilib bo'lmaydi
+        if order["status"] in TRANSITIONS:
+            await query.answer()
+            await query.edit_message_reply_markup(reply_markup=cancel_confirm_keyboard(order_id))
+        else:
+            await query.answer("Bu buyurtma holati allaqachon o'zgargan.", show_alert=True)
         return
 
     allowed = new_status in TRANSITIONS.get(order["status"], set())
@@ -2096,7 +3194,7 @@ async def on_status_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def on_cancel_ask_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    if query.from_user.id not in ADMIN_IDS:
+    if query.from_user.id not in STAFF_IDS:
         await query.answer("Ruxsat yo'q", show_alert=True)
         return
     order_id = int(query.data.split(":")[1])
@@ -2104,16 +3202,502 @@ async def on_cancel_ask_callback(update: Update, context: ContextTypes.DEFAULT_T
     if not order or order["status"] not in TRANSITIONS:
         await query.answer("Bu buyurtmani bekor qilib bo'lmaydi.", show_alert=True)
         return
+    if not can_handle(query.from_user.id, order):
+        await query.answer("Bu buyurtma sizning filialingizniki emas.", show_alert=True)
+        return
     await query.answer()
     await query.edit_message_reply_markup(reply_markup=cancel_confirm_keyboard(order_id))
 
 
-async def on_cancel_back_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def do_cancel(bot, order_id: int, reason: str, notify: bool = True) -> bool:
+    """Buyurtmani sabab bilan bekor qiladi va mijozga xabar yuboradi."""
+    order = get_order(order_id)
+    if not order or order["status"] not in TRANSITIONS:
+        return False
+    cur = db().execute(
+        "UPDATE orders SET status='cancelled', cancel_reason=?, updated_at=? WHERE id=? AND status=?",
+        (reason, int(time.time()), order_id, order["status"]),
+    )
+    if cur.rowcount == 0:  # shu orada boshqa admin o'zgartirib bo'lgan
+        return False
+    if notify:  # kafe o'zi bekor qilsa — mijozning promokodi qaytariladi (soxta buyurtma bloklanganda qaytmaydi)
+        promo_release(order_id)
+    await refresh_order_messages(bot, order_id)
+    if notify:
+        await notify_customer_status(bot, get_order(order_id))
+    return True
+
+
+async def on_cancel_reason_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    if query.from_user.id not in ADMIN_IDS:
+    if query.from_user.id not in STAFF_IDS:
+        await query.answer("Ruxsat yo'q", show_alert=True)
+        return
+    _, raw_id, code = query.data.split(":")
+    order_id = int(raw_id)
+    order = get_order(order_id)
+    if not order or order["status"] not in TRANSITIONS:
+        await query.answer("Bu buyurtmani bekor qilib bo'lmaydi.", show_alert=True)
+        await refresh_order_messages(context.bot, order_id)
+        return
+    if not can_handle(query.from_user.id, order):
+        await query.answer("Bu buyurtma sizning filialingizniki emas.", show_alert=True)
+        return
+    wait = context.application.bot_data.setdefault("cancel_wait", {})
+    if code == "oth":
+        wait[query.from_user.id] = order_id
+        await query.answer()
+        await safe_send(
+            context.bot, query.from_user.id,
+            f"✍️ #{order_no(order)} buyurtmani bekor qilish sababini yozing — u mijozga yuboriladi.\n"
+            "(Fikringizdan qaytsangiz, buyurtma xabaridagi «↩️ Orqaga» tugmasini bosing.)",
+        )
+        return
+    wait.pop(query.from_user.id, None)
+    ok = await do_cancel(context.bot, order_id, CANCEL_REASONS[code])
+    await query.answer("Bekor qilindi, sabab mijozga yuborildi ✅" if ok else "Bu buyurtma holati allaqachon o'zgargan.", show_alert=not ok)
+
+
+async def handle_cancel_reason_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin «Boshqa sabab» ni bosgandan keyin yozgan matni — mijozga sabab sifatida ketadi."""
+    uid = update.effective_user.id
+    wait = context.application.bot_data.setdefault("cancel_wait", {})
+    order_id = wait.pop(uid, None)
+    reason = (update.message.text or "").strip()[:200]
+    order = get_order(order_id) if order_id else None
+    if not order or not reason:
+        return
+    ok = await do_cancel(context.bot, order_id, reason)
+    await update.message.reply_text(
+        f"❌ #{order_no(order)} bekor qilindi, sabab mijozga yuborildi." if ok else "Bu buyurtma holati allaqachon o'zgargan."
+    )
+
+
+async def on_block_ask_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if query.from_user.id not in STAFF_IDS:
         await query.answer("Ruxsat yo'q", show_alert=True)
         return
     order = get_order(int(query.data.split(":")[1]))
+    if not order:
+        await query.answer("Buyurtma topilmadi", show_alert=True)
+        return
+    if not can_handle(query.from_user.id, order):
+        await query.answer("Bu buyurtma sizning filialingizniki emas.", show_alert=True)
+        return
+    await query.answer()
+    await query.edit_message_reply_markup(
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [_btn("🚫 Ha, mijozni bloklash va buyurtmani bekor qilish", f"bk:{order['id']}")],
+                [_btn("↩️ Orqaga", f"cb:{order['id']}")],
+            ]
+        )
+    )
+
+
+async def on_block_do_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if query.from_user.id not in STAFF_IDS:
+        await query.answer("Ruxsat yo'q", show_alert=True)
+        return
+    order = get_order(int(query.data.split(":")[1]))
+    if not order:
+        await query.answer("Buyurtma topilmadi", show_alert=True)
+        return
+    if not can_handle(query.from_user.id, order):
+        await query.answer("Bu buyurtma sizning filialingizniki emas.", show_alert=True)
+        return
+    label = f"#{order_no(order)} buyurtmadan ({query.from_user.id} blokladi)"
+    ban("user", str(order["user_id"]), label)
+    ban("phone", phone_key(order["phone"]), label)
+    await do_cancel(context.bot, order["id"], "Soxta buyurtma — mijoz bloklandi", notify=False)
+    await query.answer("Mijoz bloklandi 🚫 Buyurtma bekor qilindi.", show_alert=True)
+
+
+def _parse_ban_args(args):
+    """'/blok id 123456' yoki '/blok +998901234567' -> (tur, qiymat) yoki None."""
+    if not args:
+        return None
+    if args[0].lower() == "id":
+        d = re.sub(r"\D", "", args[1]) if len(args) > 1 else ""
+        return ("user", d) if d else None
+    d = re.sub(r"\D", "", " ".join(args))
+    return ("phone", phone_key(d)) if len(d) >= 9 else None
+
+
+_BAN_USAGE = (
+    "Telefon bo'yicha: /blok +998 90 123 45 67\n"
+    "Telegram ID bo'yicha: /blok id 123456789\n"
+    "Qaytarish (faqat super admin): /blokdan <shu raqam yoki id>\n"
+    "Ro'yxat (faqat super admin): /bloklar"
+)
+
+
+@admin_only
+async def cmd_blok(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    parsed = _parse_ban_args(context.args)
+    if not parsed:
+        await update.message.reply_text("🚫 Mijozni bloklash\n" + _BAN_USAGE)
+        return
+    kind, value = parsed
+    ban(kind, value, f"qo'lda ({update.effective_user.id} blokladi)")
+    what = "Telegram ID" if kind == "user" else "telefon (oxirgi 9 raqam)"
+    await update.message.reply_text(f"🚫 Bloklandi: {what} {value}\nQaytarish: /blokdan " + ("id " if kind == "user" else "") + value)
+
+
+@super_only
+async def cmd_blokdan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    parsed = _parse_ban_args(context.args)
+    if not parsed:
+        await update.message.reply_text("♻️ Blokdan chiqarish\n" + _BAN_USAGE)
+        return
+    kind, value = parsed
+    n = unban(kind, value)
+    await update.message.reply_text("✅ Blokdan chiqarildi." if n else "Bunday bloklangan mijoz topilmadi.")
+
+
+@super_only
+async def cmd_bloklar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    rows = db().execute("SELECT * FROM banned ORDER BY created_at DESC LIMIT 60").fetchall()
+    if not rows:
+        await update.message.reply_text("Bloklangan mijozlar yo'q.")
+        return
+    lines = ["🚫 <b>Bloklanganlar</b> (oxirgi 60 tasi)"]
+    for r in rows:
+        when = time.strftime("%d.%m %H:%M", time.localtime(r["created_at"]))
+        kind = "ID" if r["kind"] == "user" else "tel"
+        lines.append(f"• {kind} <code>{esc(r['value'])}</code> — {esc(r['label'])} · {when}")
+    await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
+
+
+@super_only
+async def cmd_promo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args or []
+    now = int(time.time())
+    if args and args[0].lower() == "off":
+        code = norm_code(args[1]) if len(args) > 1 else ""
+        n = db().execute("UPDATE promo_codes SET active=0 WHERE code=?", (code,)).rowcount if code else 0
+        await update.message.reply_text("⛔ Promokod o'chirildi." if n else "Bunday promokod topilmadi. Masalan: /promo off STREET10")
+        return
+    if args:
+        code = norm_code(args[0])
+        try:
+            percent, days = int(args[1]), int(args[2])
+            limit = int(args[3]) if len(args) > 3 else None
+        except (IndexError, ValueError):
+            code = ""
+        if len(code) < 3 or not (1 <= percent <= 90) or not (1 <= days <= 365) or (limit is not None and limit < 1):
+            await update.message.reply_text("Namuna: /promo STREET10 10 30\n(kod, chegirma %, necha kun amal qiladi; oxirida ixtiyoriy: nechta mijoz ishlata oladi)")
+            return
+        if db().execute("SELECT 1 FROM promo_codes WHERE code=?", (code,)).fetchone():
+            await update.message.reply_text("Bunday kod allaqachon bor. Boshqa nom tanlang yoki avval /promo off " + code)
+            return
+        db().execute(
+            "INSERT INTO promo_codes (code, percent, valid_until, user_id, max_uses, note, created_at) VALUES (?,?,?,?,?,?,?)",
+            (code, percent, now + days * 86400, None, limit, "public", now),
+        )
+        await update.message.reply_text(
+            f"✅ Promokod tayyor: <code>{code}</code> — {percent}% chegirma, {days} kun"
+            + (f", jami {limit} ta mijoz" if limit else "")
+            + ".\nHar mijoz uni bir marta ishlata oladi. O'chirish: /promo off " + code,
+            parse_mode=ParseMode.HTML,
+        )
+        return
+    rows = db().execute(
+        "SELECT * FROM promo_codes WHERE active=1 AND valid_until>? AND note!='winback' ORDER BY created_at DESC LIMIT 30", (now,)
+    ).fetchall()
+    wb = db().execute(
+        "SELECT COUNT(*) AS n, COALESCE(SUM(used),0) AS u FROM promo_codes WHERE note='winback' AND created_at>?", (now - 30 * 86400,)
+    ).fetchone()
+    lines = ["🎁 <b>Promokodlar</b>", "Yaratish: /promo STREET10 10 30 (kod, %, kun)", "O'chirish: /promo off STREET10", ""]
+    for r in rows:
+        left = max(1, (r["valid_until"] - now) // 86400)
+        lines.append(f"• <code>{esc(r['code'])}</code> — {r['percent']}% · {left} kun qoldi · ishlatilgan: {r['used']}" + (f"/{r['max_uses']}" if r["max_uses"] else ""))
+    if not rows:
+        lines.append("Faol umumiy promokod yo'q.")
+    lines += ["", f"«Sizni sog'indik» xabari (oxirgi 30 kun): {wb['n']} ta kod yuborilgan, {wb['u']} tasi ishlatilgan."]
+    await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
+
+
+def winback_targets(seg: str, days: int) -> list:
+    """seg: old — oldin buyurtma bergan, lekin so'nggi {days} kunda bermagan; new — hech qachon buyurtma bermagan; all — ikkalasi."""
+    now = int(time.time())
+    conn = db()
+    old = conn.execute(
+        "SELECT u.user_id, u.full_name FROM users u JOIN "
+        "(SELECT user_id, MAX(created_at) AS last FROM orders WHERE status!='cancelled' GROUP BY user_id) o ON o.user_id=u.user_id "
+        "WHERE u.blocked=0 AND o.last<?", (now - days * 86400,),
+    ).fetchall()
+    never = conn.execute(
+        "SELECT u.user_id, u.full_name FROM users u WHERE u.blocked=0 AND NOT EXISTS "
+        "(SELECT 1 FROM orders o WHERE o.user_id=u.user_id AND o.status!='cancelled')"
+    ).fetchall()
+    rows = old if seg == "old" else never if seg == "new" else list(old) + list(never)
+    pending = {
+        r["user_id"] for r in conn.execute(
+            "SELECT user_id FROM promo_codes WHERE note='winback' AND active=1 AND used=0 AND valid_until>? AND user_id IS NOT NULL", (now,)
+        )
+    }
+    return [r for r in rows if r["user_id"] not in pending and r["user_id"] not in STAFF_IDS and not is_banned(user_id=r["user_id"])]
+
+
+def winback_message(full_name, percent: int, code: str, valid_days: int) -> str:
+    first = (full_name or "").strip().split(" ")[0] if full_name else ""
+    hello = f"{esc(first)}, sizni" if first else "Sizni"
+    return WINBACK_TEXT.format(hello=hello, percent=percent, code=code, days=valid_days)
+
+
+@super_only
+async def cmd_qaytarish(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args or []
+    try:
+        percent = int(args[0]) if len(args) > 0 else 10
+        days = int(args[1]) if len(args) > 1 else 30
+        valid = int(args[2]) if len(args) > 2 else 7
+    except ValueError:
+        percent = 0
+    if not (1 <= percent <= 50) or not (7 <= days <= 365) or not (1 <= valid <= 60):
+        await update.message.reply_text(
+            "Namuna: /qaytarish 15 30 7\n"
+            "(chegirma % · necha kundan beri buyurtma bermaganlarga · promokod necha kun amal qiladi)\n"
+            "Hech narsa yozmasangiz: 10% · 30 kun · 7 kun."
+        )
+        return
+    context.application.bot_data.setdefault("winback", {})[update.effective_user.id] = {"percent": percent, "days": days, "valid": valid}
+    n_old, n_new = len(winback_targets("old", days)), len(winback_targets("new", days))
+    rows = [
+        [_btn(f"So'nggi {days} kun buyurtma bermaganlar ({n_old})", "wb:s:old")],
+        [_btn(f"Hech qachon buyurtma bermaganlar ({n_new})", "wb:s:new")],
+        [_btn(f"Ikkalasi ({len(winback_targets('all', days))})", "wb:s:all")],
+        [_btn("❌ Bekor qilish", "wb:no")],
+    ]
+    await update.message.reply_text(
+        f"💌 <b>«Sizni sog'indik» xabari</b>\nHar mijozga o'zining promokodi yuboriladi: {percent}% chegirma, {valid} kun amal qiladi, bir marta ishlatiladi.\n\n"
+        "Kimlarga yuboramiz?",
+        parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(rows),
+    )
+
+
+async def run_winback(bot, admin_id: int, seg: str, p: dict) -> None:
+    sent = failed = 0
+    for row in winback_targets(seg, p["days"]):
+        uid = row["user_id"]
+        code = new_personal_code(p["percent"], p["valid"], uid)
+        try:
+            await tg_call(bot.send_message, chat_id=uid, text=winback_message(row["full_name"], p["percent"], code, p["valid"]),
+                          parse_mode=ParseMode.HTML, reply_markup=open_app_markup())
+            sent += 1
+        except Forbidden:
+            mark_blocked(uid)
+            db().execute("DELETE FROM promo_codes WHERE code=?", (code,))
+            failed += 1
+        except TelegramError:
+            db().execute("DELETE FROM promo_codes WHERE code=?", (code,))
+            failed += 1
+        await asyncio.sleep(0.06)
+    await safe_send(
+        bot, admin_id,
+        f"💌 «Sizni sog'indik» xabari yuborildi ({p['percent']}% chegirma).\n✅ Yetkazildi: {sent}\n❌ Yetmadi: {failed}\n"
+        "Natijani /promo da ko'rasiz (nechtasi ishlatilgani).",
+    )
+
+
+async def on_winback_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = query.from_user.id
+    if uid not in SUPER_ADMIN_IDS:
+        await query.answer("Ruxsat yo'q", show_alert=True)
+        return
+    store = context.application.bot_data.setdefault("winback", {})
+    p = store.get(uid)
+    parts = query.data.split(":")  # wb:no | wb:s:<seg> | wb:go:<seg>
+    action = parts[1] if len(parts) > 1 else ""
+    if action == "no":
+        store.pop(uid, None)
+        await query.answer("Bekor qilindi")
+        await _edit_callback_message(query, "❌ Yuborish bekor qilindi.")
+        return
+    if not p or len(parts) != 3 or parts[2] not in ("old", "new", "all"):
+        await query.answer("Bu so'rov eskirgan. /qaytarish ni qaytadan yozing.", show_alert=True)
+        return
+    seg = parts[2]
+    if action == "s":
+        n = len(winback_targets(seg, p["days"]))
+        if not n:
+            await query.answer("Bu guruhda hozir hech kim yo'q.", show_alert=True)
+            return
+        await query.answer()
+        sample = winback_message("Aziz Aliyev", p["percent"], "SXXXXXXX", p["valid"])
+        await _edit_callback_message(
+            query, f"📣 <b>{n} ta mijozga</b> quyidagi xabar yuboriladi (kod har kimga alohida):\n\n{sample}",
+            InlineKeyboardMarkup([[_btn("✅ Yuborish", f"wb:go:{seg}")], [_btn("❌ Bekor qilish", "wb:no")]]),
+        )
+    elif action == "go":
+        store.pop(uid, None)
+        await query.answer("Yuborish boshlandi")
+        await _edit_callback_message(query, "⏳ Xabarlar yuborilmoqda... Tugagach, natijani yozaman.")
+        spawn(run_winback(context.bot, uid, seg, p))
+    else:
+        await query.answer()
+
+
+# ---- AVTOMATIK "Sizni sog'indik" ----
+def _auto_wb_enabled() -> bool:
+    return get_setting("auto_winback", "1" if AUTO_WINBACK else "0") == "1"
+
+
+def _auto_wb_time():
+    m = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*", AUTO_WINBACK_TIME or "")
+    if m and int(m.group(1)) < 24 and int(m.group(2)) < 60:
+        return int(m.group(1)), int(m.group(2))
+    return 18, 15
+
+
+def auto_winback_targets() -> list:
+    """Oxirgi buyurtmasiga AUTO_WINBACK_DAYS kundan ko'p bo'lgan mijozlar (kutish va limitlar hisobga olingan).
+    Eng yaqinda yo'qolganlar birinchi turadi — ularni qaytarish osonroq."""
+    now = int(time.time())
+    cutoff = now - AUTO_WINBACK_DAYS * 86400
+    conn = db()
+    rows = list(conn.execute(
+        "SELECT u.user_id, u.full_name, o.last AS last_order FROM users u JOIN "
+        "(SELECT user_id, MAX(created_at) AS last FROM orders WHERE status!='cancelled' GROUP BY user_id) o ON o.user_id=u.user_id "
+        "WHERE u.blocked=0 AND o.last<? ORDER BY o.last DESC", (cutoff,),
+    ))
+    if AUTO_WINBACK_INCLUDE_NEVER:
+        rows += list(conn.execute(
+            "SELECT u.user_id, u.full_name, NULL AS last_order FROM users u WHERE u.blocked=0 AND u.first_seen<? AND NOT EXISTS "
+            "(SELECT 1 FROM orders o WHERE o.user_id=u.user_id AND o.status!='cancelled') ORDER BY u.first_seen DESC", (cutoff,),
+        ))
+    sent_at: dict = {}
+    for r in conn.execute("SELECT user_id, sent_at FROM winback_log"):
+        sent_at.setdefault(r["user_id"], []).append(r["sent_at"])
+    out = []
+    for r in rows:
+        uid = r["user_id"]
+        # faqat joriy "yo'qolish" davrida yuborilganlar hisoblanadi: mijoz qaytib buyurtma bersa, hisob yangidan boshlanadi
+        recent = [t for t in sent_at.get(uid, []) if t > (r["last_order"] or 0)]
+        if len(recent) >= AUTO_WINBACK_MAX_TIMES:
+            continue
+        if recent and now - max(recent) < AUTO_WINBACK_COOLDOWN_DAYS * 86400:
+            continue
+        if uid in STAFF_IDS or is_banned(user_id=uid):
+            continue
+        out.append(r)
+    return out
+
+
+def favorite_dish(user_id: int):
+    """Mijoz eng ko'p buyurtma bergan (va hozir menyuda bor, tugamagan) taom nomi."""
+    counter: Counter = Counter()
+    for row in db().execute("SELECT items_json FROM orders WHERE user_id=? AND status!='cancelled'", (user_id,)):
+        for it in json.loads(row["items_json"]):
+            counter[it["id"]] += it["count"]
+    stopped = get_stoplist()
+    for pid, _n in counter.most_common():
+        if pid in PRODUCTS and pid not in stopped:
+            return PRODUCTS[pid]["name"]
+    return None
+
+
+def auto_winback_message(full_name, user_id: int, last_order) -> str:
+    first = (full_name or "").strip().split(" ")[0] if full_name else ""
+    hello = f"{esc(first)}, sizni" if first else "Sizni"
+    parts = []
+    if last_order:
+        ago = max(1, (int(time.time()) - last_order) // 86400)
+        parts.append(f"Oxirgi buyurtmangizdan beri {ago} kun o'tdi.")
+    fav = favorite_dish(user_id)
+    if fav:
+        parts.append(f"Sevimli taomingiz — <b>{esc(fav)}</b> — sizni kutmoqda! 😋")
+    intro = ("\n".join(parts) + "\n\n") if parts else ""
+    return random.choice(AUTO_WINBACK_TEXTS).format(hello=hello, intro=intro)
+
+
+async def run_auto_winback(bot) -> tuple:
+    sent = failed = 0
+    for row in auto_winback_targets():
+        if sent >= AUTO_WINBACK_MAX_PER_DAY or failed >= AUTO_WINBACK_MAX_PER_DAY:
+            break
+        uid = row["user_id"]
+        try:
+            await tg_call(
+                bot.send_message, chat_id=uid,
+                text=auto_winback_message(row["full_name"], uid, row["last_order"]),
+                parse_mode=ParseMode.HTML, reply_markup=open_app_markup(),
+            )
+            db().execute("INSERT INTO winback_log (user_id, sent_at) VALUES (?, ?)", (uid, int(time.time())))
+            sent += 1
+        except Forbidden:  # mijoz botni bloklagan
+            mark_blocked(uid)
+            failed += 1
+        except TelegramError:
+            failed += 1
+        await asyncio.sleep(0.06)
+    return sent, failed
+
+
+async def check_auto_winback(bot) -> None:
+    """Har kuni AUTO_WINBACK_TIME da bir marta ishlaydi (kafe ochiq bo'lsa)."""
+    if not _auto_wb_enabled():
+        return
+    try:
+        now = datetime.now(LOCAL_TZ)
+        hh, mm = _auto_wb_time()
+        due = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        if now < due or (now - due).total_seconds() > AUTO_WINBACK_LATE_MIN * 60:
+            return
+        today = now.strftime("%Y-%m-%d")
+        if get_setting("auto_winback_day") == today or not any_open():
+            return
+        set_setting("auto_winback_day", today)  # ikki marta ishlamasligi uchun avval belgilaymiz
+        sent, failed = await run_auto_winback(bot)
+        if sent or failed:
+            log.info("Avto «sog'indik»: yuborildi %s, yetmadi %s", sent, failed)
+            await notify_super(
+                bot,
+                f"💌 Avtomatik «Sizni sog'indik»: {sent} ta mijozga yuborildi"
+                + (f", {failed} tasiga yetmadi" if failed else "")
+                + ".\nNatija: /avto",
+            )
+    except Exception:
+        log.exception("Avtomatik «sog'indik» xatosi")
+
+
+@super_only
+async def cmd_avto(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    arg = (context.args[0].lower() if context.args else "")
+    if arg in ("on", "off"):
+        set_setting("auto_winback", "1" if arg == "on" else "0")
+    on = _auto_wb_enabled()
+    state = "🟢 yoqilgan" if on else "🔴 o'chirilgan"
+    wb = db().execute(
+        "SELECT COUNT(*) AS n, COALESCE(SUM(EXISTS(SELECT 1 FROM orders o WHERE o.user_id=w.user_id AND o.created_at>w.sent_at "
+        "AND o.status!='cancelled')), 0) AS back FROM winback_log w WHERE w.sent_at>?",
+        (int(time.time()) - 30 * 86400,),
+    ).fetchone()
+    hh, mm = _auto_wb_time()
+    await update.message.reply_text(
+        f"💌 <b>Avtomatik «Sizni sog'indik»</b>: {state}\n\n"
+        f"• {AUTO_WINBACK_DAYS} kundan beri buyurtma bermaganlarga har kuni {hh:02d}:{mm:02d} da yuboriladi\n"
+        f"• Hozir navbatda: {len(auto_winback_targets())} ta mijoz\n"
+        f"• Oxirgi 30 kunda: {wb['n']} ta yuborilgan, shulardan {wb['back']} tasi qaytib buyurtma bergan\n\n"
+        "Yoqish: /avto on · O'chirish: /avto off",
+        parse_mode=ParseMode.HTML,
+    )
+
+
+async def on_cancel_back_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if query.from_user.id not in STAFF_IDS:
+        await query.answer("Ruxsat yo'q", show_alert=True)
+        return
+    context.application.bot_data.setdefault("cancel_wait", {}).pop(query.from_user.id, None)
+    order = get_order(int(query.data.split(":")[1]))
+    if order and not can_handle(query.from_user.id, order):
+        await query.answer("Bu buyurtma sizning filialingizniki emas.", show_alert=True)
+        return
     await query.answer()
     if order:
         await query.edit_message_reply_markup(reply_markup=admin_keyboard(order))
@@ -2214,7 +3798,7 @@ async def on_courier_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📎 → Joylashuv → «Jonli joylashuvni ulashish» (masalan, 8 soatga).",
     )
     await safe_send(context.bot, order["user_id"], f"🛵 Kuryer <b>{esc(name)}</b> buyurtmangizni #{order_no(order)} oldi.\n📞 Kuryer telefoni: {esc(phone)}")
-    for admin_id in ADMIN_IDS:
+    for admin_id in order_staff(order):
         await safe_send(context.bot, admin_id, f"🛵 #{order_no(order)} buyurtmani {esc(name)} ({esc(phone)}) oldi.")
 
 
@@ -2253,7 +3837,7 @@ async def on_rate_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer("Rahmat! 🙏")
     await query.edit_message_text(f"Bahoyingiz uchun rahmat! {'⭐' * rating}")
     low = rating <= LOW_RATING_MAX
-    for admin_id in ADMIN_IDS:
+    for admin_id in order_staff(order):
         if low:
             await safe_send(
                 context.bot, admin_id,
@@ -2282,10 +3866,19 @@ USER_COMMANDS = [
     BotCommand("aloqa", "Bog'lanish"),
     BotCommand("manzil", "Manzilimiz"),
 ]
-ADMIN_COMMANDS = USER_COMMANDS + [
+SUPER_COMMANDS = USER_COMMANDS + [
     BotCommand("ochish", "Buyurtma qabul qilishni ochish"),
     BotCommand("yopish", "Buyurtma qabul qilishni yopish"),
     BotCommand("stop", "Stop-list (tugagan taomlar)"),
+    BotCommand("blok", "Mijozni bloklash (soxta buyurtma)"),
+    BotCommand("blokdan", "Mijozni blokdan chiqarish"),
+    BotCommand("bloklar", "Bloklanganlar ro'yxati"),
+    BotCommand("yangi", "Menyuga yangi taom qo'shish"),
+    BotCommand("narx", "Taom narxlarini o'zgartirish / o'chirish"),
+    BotCommand("zaxira", "Baza nusxasini hozir olish"),
+    BotCommand("promo", "Promokod yaratish / ro'yxat"),
+    BotCommand("qaytarish", "«Sizni sog'indik» chegirma xabari"),
+    BotCommand("avto", "Avtomatik «Sizni sog'indik» (yoqish/o'chirish)"),
     BotCommand("stats", "Statistika"),
     BotCommand("broadcast", "Hammaga xabar yuborish"),
     BotCommand("chek", "Chekni qayta chiqarish / sinov"),
@@ -2294,6 +3887,13 @@ ADMIN_COMMANDS = USER_COMMANDS + [
     BotCommand("smena", "Smenani yopish"),
     BotCommand("mijozlar", "Mijozlar bazasi"),
     BotCommand("eksport", "Mijozlar ro'yxati (fayl)"),
+]
+ADMIN_COMMANDS = USER_COMMANDS + [
+    BotCommand("ochish", "Buyurtma qabul qilishni ochish"),
+    BotCommand("yopish", "Buyurtma qabul qilishni yopish"),
+    BotCommand("stop", "Stop-list (tugagan taomlar)"),
+    BotCommand("blok", "Mijozni bloklash (soxta buyurtma)"),
+    BotCommand("chek", "Chekni qayta chiqarish / sinov"),
 ]
 
 
@@ -2375,14 +3975,34 @@ atexit.register(stop_tunnel)
 # ---- /INTERNETGA CHIQISH ----
 
 
+def check_unexpected_stop(bot) -> None:
+    """Bot kutilmaganda (o'chib, internet uzilib, xato bilan) to'xtab qolgan bo'lsa, super adminga aytadi."""
+    try:
+        now_ts = int(time.time())
+        last_alive = int(get_setting("last_alive", "0") or 0)
+        clean = get_setting("clean_stop") == "1"
+        set_setting("clean_stop", "0")
+        set_setting("last_alive", str(now_ts))
+        if last_alive and not clean and now_ts - last_alive > 150:
+            t1 = datetime.fromtimestamp(last_alive, LOCAL_TZ).strftime("%d.%m %H:%M")
+            t2 = datetime.fromtimestamp(now_ts, LOCAL_TZ).strftime("%d.%m %H:%M")
+            spawn(notify_super(
+                bot,
+                f"⚠️ Bot kutilmaganda to'xtab qolgan edi: {t1} dan {t2} gacha (~{(now_ts - last_alive) // 60} daqiqa ishlamadi). "
+                "Hozir qayta ishga tushdi. Shu vaqtda buyurtma bermoqchi bo'lgan mijozlar bo'lsa, tekshirib ko'ring.",
+            ))
+    except Exception:
+        log.exception("To'xtab qolish vaqtini tekshirishda xato")
+
+
 async def post_init(application):
     global WEB_APP_URL
     try:
         await application.bot.set_my_commands(USER_COMMANDS)
-        for admin_id in ADMIN_IDS:
+        for admin_id in STAFF_IDS:
             try:
                 await application.bot.set_my_commands(
-                    ADMIN_COMMANDS, scope=BotCommandScopeChat(chat_id=admin_id)
+                    (SUPER_COMMANDS if admin_id in SUPER_ADMIN_IDS else ADMIN_COMMANDS), scope=BotCommandScopeChat(chat_id=admin_id)
                 )
             except TelegramError as exc:
                 log.warning("Admin (%s) buyruqlarini o'rnatib bo'lmadi: %s", admin_id, exc)
@@ -2395,6 +4015,7 @@ async def post_init(application):
     await site.start()
     application.bot_data["web_runner"] = runner
     log.info("Buyurtma serveri ishga tushdi: http://%s:%s", HOST, PORT)
+    check_unexpected_stop(application.bot)
     spawn(smena_scheduler(application.bot))
 
     # Ilovaga internetdan kirish manzili
@@ -2412,6 +4033,7 @@ async def post_init(application):
             loop = asyncio.get_running_loop()
             url = await loop.run_in_executor(None, start_tunnel, exe, PORT)
             if url:
+                _HEALTH["tunnel"] = url
                 WEB_APP_URL = site_link(url)
             else:
                 print("⚠️  Manzil olinmadi. Internetni tekshirib, botni qayta ishga tushiring.")
@@ -2425,6 +4047,10 @@ async def post_init(application):
 
 
 async def post_shutdown(application):
+    try:
+        set_setting("clean_stop", "1")  # odatiy (Ctrl+C) to'xtatish — keyingi yoqilganda "kutilmaganda to'xtadi" deb yozmaydi
+    except Exception:
+        pass
     stop_tunnel()
     runner = application.bot_data.get("web_runner")
     if runner is not None:
@@ -2437,8 +4063,8 @@ def main():
             "❌ BOT_TOKEN topilmadi.\n"
             "   bot.py ning yuqorisidagi  BOT_TOKEN = \"\"  qatoriga @BotFather bergan tokenni yozing."
         )
-    if not ADMIN_IDS:
-        raise SystemExit("❌ ADMIN_IDS topilmadi. bot.py yuqorisidagi ADMIN_IDS = [...] ga Telegram ID yozing.")
+    if not SUPER_ADMIN_IDS:
+        raise SystemExit("❌ SUPER_ADMIN_IDS topilmadi. bot.py yuqorisidagi SUPER_ADMIN_IDS = [...] ga o'z Telegram ID ingizni yozing.")
 
     init_db()
 
@@ -2458,11 +4084,22 @@ def main():
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("telefon", cmd_telefon))
     app.add_handler(MessageHandler(filters.LOCATION, on_location))
+    app.add_handler(MessageHandler(filters.PHOTO & filters.ChatType.PRIVATE, on_dish_photo))
     app.add_handler(CommandHandler("aloqa", cmd_aloqa))
     app.add_handler(CommandHandler("manzil", cmd_manzil))
     app.add_handler(CommandHandler("ochish", cmd_ochish))
     app.add_handler(CommandHandler("yopish", cmd_yopish))
     app.add_handler(CommandHandler("stop", cmd_stop))
+    app.add_handler(CommandHandler("narx", cmd_narx))
+    app.add_handler(CommandHandler("zaxira", cmd_zaxira))
+    app.add_handler(CommandHandler("promo", cmd_promo))
+    app.add_handler(CommandHandler("qaytarish", cmd_qaytarish))
+    app.add_handler(CommandHandler("avto", cmd_avto))
+    app.add_handler(CallbackQueryHandler(on_winback_callback, pattern=r"^wb:"))
+    app.add_handler(CommandHandler("yangi", cmd_yangi))
+    app.add_handler(CommandHandler("blok", cmd_blok))
+    app.add_handler(CommandHandler("blokdan", cmd_blokdan))
+    app.add_handler(CommandHandler("bloklar", cmd_bloklar))
     app.add_handler(CommandHandler("stats", cmd_stats))
     app.add_handler(CommandHandler("broadcast", cmd_broadcast))
     app.add_handler(CommandHandler("chek", cmd_chek))
@@ -2477,8 +4114,14 @@ def main():
     app.add_handler(CallbackQueryHandler(on_courier_done, pattern=r"^cd:\d+$"))
     app.add_handler(CallbackQueryHandler(on_cancel_ask_callback, pattern=r"^cq:\d+$"))
     app.add_handler(CallbackQueryHandler(on_cancel_back_callback, pattern=r"^cb:\d+$"))
+    app.add_handler(CallbackQueryHandler(on_block_ask_callback, pattern=r"^bl:\d+$"))
+    app.add_handler(CallbackQueryHandler(on_block_do_callback, pattern=r"^bk:\d+$"))
+    app.add_handler(CallbackQueryHandler(on_cancel_reason_callback, pattern=r"^cx:\d+:(nop|nom|oth)$"))
     app.add_handler(CallbackQueryHandler(on_rate_callback, pattern=r"^rate:\d+:[1-5]$"))
     app.add_handler(CallbackQueryHandler(on_stop_callback, pattern=r"^sl:"))
+    app.add_handler(CallbackQueryHandler(on_openclose_callback, pattern=r"^oc:"))
+    app.add_handler(CallbackQueryHandler(on_price_callback, pattern=r"^pr:"))
+    app.add_handler(CallbackQueryHandler(on_dish_callback, pattern=r"^dn:"))
     app.add_handler(CallbackQueryHandler(on_broadcast_callback, pattern=r"^bc:(yes|no)$"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, on_any_text))
     app.add_error_handler(on_error)
