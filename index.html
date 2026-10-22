@@ -1383,54 +1383,9 @@
       }
     }
 
-    const products = {
-      // XOT-DOGLAR
-      h1_25: { id: 'h1_25', category: 'hotdog', name: 'Острый хот-дог (C)', price: 25000, img: 'https://i.ibb.co/whFmZhY4/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, корейский баклажан, свит чили соус, фирменный соус, халапеньо' },
-      h1_35: { id: 'h1_35', category: 'hotdog', name: 'Острый хот-дог (M)', price: 35000, img: 'https://i.ibb.co/whFmZhY4/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, корейский баклажан, свит чили соус, фирменный соус, халапеньо' },
-      h2_30: { id: 'h2_30', category: 'hotdog', name: 'Чикаго хот-дог (C)', price: 30000, img: 'https://i.ibb.co/d0h8q4T9/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, мясо тушеное, сырный соус, фирменный соус' },
-      h2_45: { id: 'h2_45', category: 'hotdog', name: 'Чикаго хот-дог (M)', price: 45000, img: 'https://i.ibb.co/d0h8q4T9/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, мясо тушеное, сырный соус, фирменный соус' },
-      h3_50: { id: 'h3_50', category: 'hotdog', name: 'Американский хот-дог', price: 50000, img: 'https://i.ibb.co/SwyLsq23/uploaded-image.jpg', desc: 'Сытный американский хот-дог с сосиской, горчичным соусом и мясной начинкой' },
-      h4_30: { id: 'h4_30', category: 'hotdog', name: 'Нью-Йорк хот-дог', price: 30000, img: 'https://i.ibb.co/1JX6pT55/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, сол. огурец, горчичный соус, чипсы, кетчуп, майонез' },
-      h5_30: { id: 'h5_30', category: 'hotdog', name: 'Мехико хот-дог (C)', price: 30000, img: 'https://i.ibb.co/V04WZqTY/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, фарш, медовый соус, фирменный соус' },
-      h5_45: { id: 'h5_45', category: 'hotdog', name: 'Мехико хот-дог (M)', price: 45000, img: 'https://i.ibb.co/V04WZqTY/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, фарш, медовый соус, фирменный соус' },
-      h6_35: { id: 'h6_35', category: 'hotdog', name: 'Классический хот-дог', price: 35000, img: 'https://i.ibb.co/nsBf3tYp/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, помидор, огурец, айсберг, сырный соус, кетчуп, майонез' },
-      h7_30: { id: 'h7_30', category: 'hotdog', name: 'Чикен хот-дог (C)', price: 30000, img: 'https://i.ibb.co/Q3BMMmBc/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, курица терияки, сыр чеддер, чипсы, свит чили соус, кетчуп' },
-      h7_40: { id: 'h7_40', category: 'hotdog', name: 'Чикен хот-дог (M)', price: 40000, img: 'https://i.ibb.co/Q3BMMmBc/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, курица терияки, сыр чеддер, чипсы, свит чили соус, кетчуп' },
-      h8_25: { id: 'h8_25', category: 'hotdog', name: 'Французский хот-дог', price: 25000, img: 'https://i.ibb.co/DHCWRTzt/uploaded-image.jpg', desc: 'Твинс батон, сосиска, сырный соус, фирменный соус' },
-      h9_50: { id: 'h9_50', category: 'hotdog', name: 'Премиум хот-дог', price: 50000, img: 'https://i.ibb.co/wZYLgqbt/uploaded-image.jpg', desc: 'Булочка, сосиска 2х, фирменный соус, чеддер сыр, мясо тушеное, сыр моцарелла' },
-      h10_20: { id: 'h10_20', category: 'hotdog', name: 'Детский хот-дог', price: 20000, img: 'https://i.ibb.co/20BhbqBf/uploaded-image.jpg', desc: 'Небольшой хот-дог для детей: мягкая булочка, сосиска и нежный соус' },
-      h11_40: { id: 'h11_40', category: 'hotdog', name: 'Роял фреш', price: 40000, img: 'https://i.ibb.co/kVcNDpP9/uploaded-image.jpg', desc: 'Сосиска 3х, корейский баклажан, фри, халапеньо, сырный соус, фирменный соус, мини чиабатта' },
-      h12_35: { id: 'h12_35', category: 'hotdog', name: 'Сендвич', price: 35000, img: 'https://i.ibb.co/VWHCz3Px/uploaded-image.jpg', desc: 'Горячий тостовый сендвич, нарезанный треугольниками' },
-      h13_35: { id: 'h13_35', category: 'hotdog', name: 'Итальянский сендвич', price: 35000, img: 'https://i.ibb.co/5Xw3QhmR/uploaded-image.jpg', desc: 'Сытный сендвич в итальянском стиле на мягкой булочке со свежими овощами' },
-
-      // BURGERLAR
-      b1_65: { id: 'b1_65', category: 'burger', name: 'Стрит бургер (M)', price: 65000, img: 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', desc: 'Фирменный бургер с двумя котлетами и расплавленным сыром' },
-      b1_80: { id: 'b1_80', category: 'burger', name: 'Стрит бургер (L)', price: 80000, img: 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', desc: 'Фирменный бургер с двумя котлетами и расплавленным сыром' },
-      b1_95: { id: 'b1_95', category: 'burger', name: 'Стрит бургер (XL)', price: 95000, img: 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', desc: 'Фирменный бургер с двумя котлетами и расплавленным сыром' },
-      b2_65: { id: 'b2_65', category: 'burger', name: 'Классический (M)', price: 65000, img: 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', desc: 'Булочка, фарш, бургер соус, сыр чеддер, помидор, айсберг, сол. огурец' },
-      b2_80: { id: 'b2_80', category: 'burger', name: 'Классический (L)', price: 80000, img: 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', desc: 'Булочка, фарш, бургер соус, сыр чеддер, помидор, айсберг, сол. огурец' },
-      b2_95: { id: 'b2_95', category: 'burger', name: 'Классический (XL)', price: 95000, img: 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', desc: 'Булочка, фарш, бургер соус, сыр чеддер, помидор, айсберг, сол. огурец' },
-      b3_65: { id: 'b3_65', category: 'burger', name: 'Трюфельный (M)', price: 65000, img: 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', desc: 'Булочка, фарш, трюфельный соус, сыр президент' },
-      b3_80: { id: 'b3_80', category: 'burger', name: 'Трюфельный (L)', price: 80000, img: 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', desc: 'Булочка, фарш, трюфельный соус, сыр президент' },
-      b3_95: { id: 'b3_95', category: 'burger', name: 'Трюфельный (XL)', price: 95000, img: 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', desc: 'Булочка, фарш, трюфельный соус, сыр президент' },
-      b4_65: { id: 'b4_65', category: 'burger', name: 'Острый (M)', price: 65000, img: 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', desc: 'Булочка, фарш, острый соус, сыр чеддер, халапеньо' },
-      b4_80: { id: 'b4_80', category: 'burger', name: 'Острый (L)', price: 80000, img: 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', desc: 'Булочка, фарш, острый соус, сыр чеддер, халапеньо' },
-      b4_95: { id: 'b4_95', category: 'burger', name: 'Острый (XL)', price: 95000, img: 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', desc: 'Булочка, фарш, острый соус, сыр чеддер, халапеньо' },
-      b5_75: { id: 'b5_75', category: 'burger', name: 'Стейк бургер', price: 75000, img: 'https://i.ibb.co/DfHMTmw8/uploaded-image.jpg', desc: 'Булочка 10 см, бонфиле 130-150 гр, фирменный соус, сыр чеддер' },
-      b6_40: { id: 'b6_40', category: 'burger', name: 'Чизбургер', price: 40000, img: 'https://i.ibb.co/pB3Pm196/uploaded-image.jpg', desc: 'Булочка 10 см, фарш 65 гр, бургер соус, сыр чеддер, лук' },
-      b7_45: { id: 'b7_45', category: 'burger', name: 'Чикен бургер', price: 45000, img: 'https://i.ibb.co/JFG2fX92/uploaded-image.jpg', desc: 'Бургер с хрустящей куриной котлетой в панировке, сыром и свежим салатом' },
-      b8_65: { id: 'b8_65', category: 'burger', name: 'ББК (M)', price: 65000, img: 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', desc: 'Булочка, фарш, ББК соус, сыр чеддер, лук, сол. огурец' },
-      b8_80: { id: 'b8_80', category: 'burger', name: 'ББК (L)', price: 80000, img: 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', desc: 'Булочка, фарш, ББК соус, сыр чеддер, лук, сол. огурец' },
-      b8_95: { id: 'b8_95', category: 'burger', name: 'ББК (XL)', price: 95000, img: 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', desc: 'Булочка, фарш, ББК соус, сыр чеддер, лук, сол. огурец' },
-
-      // GARNIRLAR & YANGI
-      g1_58: { id: 'g1_58', category: 'garnir', name: 'СтрипБокс', price: 58000, img: 'https://i.ibb.co/bj5YyyzJ/uploaded-image.jpg', desc: 'Куриный' },
-      g2_60: { id: 'g2_60', category: 'garnir', name: 'МитБокс', price: 60000, img: 'https://i.ibb.co/gZJDFRcQ/uploaded-image.jpg', desc: 'Мясной' },
-      g3_35: { id: 'g3_35', category: 'garnir', name: 'Сырные подушки', price: 35000, img: 'https://i.ibb.co/Q79HDdyq/uploaded-image.jpg', desc: 'Хрустящие золотистые подушечки с сырной начинкой, подаются с соусом' },
-      g4_30: { id: 'g4_30', category: 'garnir', name: 'Фри с трюфелем', price: 30000, img: 'https://i.ibb.co/M5Jym5y0/uploaded-image.jpg', desc: 'Хрустящий картофель фри с трюфельным соусом' },
-      g5_25: { id: 'g5_25', category: 'garnir', name: 'Картофель Айдахо', price: 25000, img: 'https://i.ibb.co/fG4LCkQ3/uploaded-image.jpg', desc: 'Румяные дольки картофеля по-деревенски (Айдахо)' },
-      g6_20: { id: 'g6_20', category: 'garnir', name: 'Картофель фри', price: 20000, img: 'https://i.ibb.co/3Y53x7B3/uploaded-image.jpg', desc: 'Хрустящий золотистый картофель фри' }
-    };
+    // Menyu (taomlar, narxlar, rasmlar) bot bazasida saqlanadi va serverdan keladi — bu yerda qo'lda yozilmaydi.
+    // Menyuni o'zgartirish: Telegramda botga /menyu.
+    const products = {};
 
     // Admin /yangi bilan qo'shgan taomlar: serverdan keladi, oxirgisi xotirada saqlanadi
     const DISH_PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#2a2a2a"/><text x="50%" y="58%" font-size="90" text-anchor="middle">🍽️</text></svg>');
@@ -1441,11 +1396,11 @@
       (list || []).forEach(d => {
         if (!d || !d.id || products[d.id]) return;
         products[d.id] = { id: d.id, category: d.category, name: d.name, price: Number(d.price) || 0,
-          img: d.img ? base + d.img : DISH_PLACEHOLDER, desc: d.desc || '', custom: true };
+          img: d.img ? (/^https?:/i.test(d.img) ? d.img : base + d.img) : DISH_PLACEHOLDER, desc: d.desc || '', custom: true };
       });
     }
     try {
-      const savedCustom = JSON.parse(localStorage.getItem('street_dog_custom') || '[]');
+      const savedCustom = JSON.parse(localStorage.getItem('street_dog_menu') || '[]');
       mergeCustomProducts(savedCustom);
       customSig = JSON.stringify(savedCustom);
     } catch (e) {}
@@ -1652,6 +1607,10 @@
     function renderProducts() {
       const grid = document.getElementById('productGrid');
       let html = '';
+      if (!Object.keys(products).length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:40px 16px;text-align:center;opacity:.6">Menyu yuklanmoqda...</div>';
+        return;
+      }
       Object.values(products).forEach(item => {
         html += `
           <div class="product-card" data-category="${item.category}" id="card-${item.id}" onclick="openDetail('${item.id}')">
@@ -2128,7 +2087,7 @@
         computeShopState();
         hitSet = new Set(data.hits || []); newSet = new Set(data.new || []); renderBadges(); buildPromo();
         if (Number.isFinite(data.delivery_fee)) { deliveryFee = data.delivery_fee; updateCheckoutSummary(); }
-        if (Array.isArray(data.custom_products)) applyCustomProducts(data.custom_products);
+        if (Array.isArray(data.menu)) applyCustomProducts(data.menu);
         if (data.prices) applyServerPrices(data.prices);
         if (Array.isArray(data.branches)) { branches = data.branches; renderBranchSelect(); }
         serverOffline = false;
@@ -2144,7 +2103,7 @@
       const sig = JSON.stringify(list);
       if (sig === customSig) return;
       customSig = sig;
-      try { localStorage.setItem('street_dog_custom', sig); } catch (e) {}
+      try { localStorage.setItem('street_dog_menu', sig); } catch (e) {}
       mergeCustomProducts(list);
       Object.keys(cart).forEach(id => { if (!products[id]) delete cart[id]; });
       saveCartToStorage();

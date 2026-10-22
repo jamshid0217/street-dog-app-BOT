@@ -265,8 +265,8 @@ LOCAL_TZ = timezone(timedelta(hours=5))
 INIT_DATA_MAX_AGE = 2 * 24 * 3600
 
 # =====================================================================
-#  MENYU (index.html dagi mahsulotlar bilan bir xil bo'lishi SHART)
-#  Narx yoki yangi taom qo'shsangiz, bu yerni ham yangilang.
+#  MENYU — yagona manba: bot bazasi. Ilova (index.html) menyuni serverdan oladi.
+#  Narx, nom, rasm o'zgartirish va yangi taom qo'shish: Telegramda /menyu
 # =====================================================================
 CATEGORIES = {
     "hotdog": "🌭 Xot-Dog",
@@ -274,49 +274,53 @@ CATEGORIES = {
     "garnir": "🍟 Garnirlar",
 }
 
-PRODUCTS = {
-    'h1_25': {"category": 'hotdog', "name": 'Острый хот-дог (C)', "price": 25000},
-    'h1_35': {"category": 'hotdog', "name": 'Острый хот-дог (M)', "price": 35000},
-    'h2_30': {"category": 'hotdog', "name": 'Чикаго хот-дог (C)', "price": 30000},
-    'h2_45': {"category": 'hotdog', "name": 'Чикаго хот-дог (M)', "price": 45000},
-    'h3_50': {"category": 'hotdog', "name": 'Американский хот-дог', "price": 50000},
-    'h4_30': {"category": 'hotdog', "name": 'Нью-Йорк хот-дог', "price": 30000},
-    'h5_30': {"category": 'hotdog', "name": 'Мехико хот-дог (C)', "price": 30000},
-    'h5_45': {"category": 'hotdog', "name": 'Мехико хот-дог (M)', "price": 45000},
-    'h6_35': {"category": 'hotdog', "name": 'Классический хот-дог', "price": 35000},
-    'h7_30': {"category": 'hotdog', "name": 'Чикен хот-дог (C)', "price": 30000},
-    'h7_40': {"category": 'hotdog', "name": 'Чикен хот-дог (M)', "price": 40000},
-    'h8_25': {"category": 'hotdog', "name": 'Французский хот-дог', "price": 25000},
-    'h9_50': {"category": 'hotdog', "name": 'Премиум хот-дог', "price": 50000},
-    'h10_20': {"category": 'hotdog', "name": 'Детский хот-дог', "price": 20000},
-    'h11_40': {"category": 'hotdog', "name": 'Роял фреш', "price": 40000},
-    'h12_35': {"category": 'hotdog', "name": 'Сендвич', "price": 35000},
-    'h13_35': {"category": 'hotdog', "name": 'Итальянский сендвич', "price": 35000},
-    'b1_65': {"category": 'burger', "name": 'Стрит бургер (M)', "price": 65000},
-    'b1_80': {"category": 'burger', "name": 'Стрит бургер (L)', "price": 80000},
-    'b1_95': {"category": 'burger', "name": 'Стрит бургер (XL)', "price": 95000},
-    'b2_65': {"category": 'burger', "name": 'Классический (M)', "price": 65000},
-    'b2_80': {"category": 'burger', "name": 'Классический (L)', "price": 80000},
-    'b2_95': {"category": 'burger', "name": 'Классический (XL)', "price": 95000},
-    'b3_65': {"category": 'burger', "name": 'Трюфельный (M)', "price": 65000},
-    'b3_80': {"category": 'burger', "name": 'Трюфельный (L)', "price": 80000},
-    'b3_95': {"category": 'burger', "name": 'Трюфельный (XL)', "price": 95000},
-    'b4_65': {"category": 'burger', "name": 'Острый (M)', "price": 65000},
-    'b4_80': {"category": 'burger', "name": 'Острый (L)', "price": 80000},
-    'b4_95': {"category": 'burger', "name": 'Острый (XL)', "price": 95000},
-    'b5_75': {"category": 'burger', "name": 'Стейк бургер', "price": 75000},
-    'b6_40': {"category": 'burger', "name": 'Чизбургер', "price": 40000},
-    'b7_45': {"category": 'burger', "name": 'Чикен бургер', "price": 45000},
-    'b8_65': {"category": 'burger', "name": 'ББК (M)', "price": 65000},
-    'b8_80': {"category": 'burger', "name": 'ББК (L)', "price": 80000},
-    'b8_95': {"category": 'burger', "name": 'ББК (XL)', "price": 95000},
-    'g1_58': {"category": 'garnir', "name": 'СтрипБокс', "price": 58000},
-    'g2_60': {"category": 'garnir', "name": 'МитБокс', "price": 60000},
-    'g3_35': {"category": 'garnir', "name": 'Сырные подушки', "price": 35000},
-    'g4_30': {"category": 'garnir', "name": 'Фри с трюфелем', "price": 30000},
-    'g5_25': {"category": 'garnir', "name": 'Картофель Айдахо', "price": 25000},
-    'g6_20': {"category": 'garnir', "name": 'Картофель фри', "price": 20000},
-}
+PRODUCTS: dict = {}  # menyu bazadan (custom_products jadvali) yuklanadi — yagona manba. O'zgartirish: Telegramda /menyu
+
+# Faqat BIRINCHI ishga tushganda bazaga ko'chiriladi (id, bo'lim, nom, narx, rasm havolasi, tavsif).
+# Shundan keyin menyu faqat bazada yashaydi: bu ro'yxatni o'zgartirish hech narsaga ta'sir qilmaydi.
+BASE_MENU = [
+    ('h1_25', 'hotdog', 'Острый хот-дог (C)', 25000, 'https://i.ibb.co/whFmZhY4/uploaded-image.jpg', 'Булочка, сосиска 2х, корейский баклажан, свит чили соус, фирменный соус, халапеньо'),
+    ('h1_35', 'hotdog', 'Острый хот-дог (M)', 35000, 'https://i.ibb.co/whFmZhY4/uploaded-image.jpg', 'Булочка, сосиска 2х, корейский баклажан, свит чили соус, фирменный соус, халапеньо'),
+    ('h2_30', 'hotdog', 'Чикаго хот-дог (C)', 30000, 'https://i.ibb.co/d0h8q4T9/uploaded-image.jpg', 'Булочка, сосиска 2х, мясо тушеное, сырный соус, фирменный соус'),
+    ('h2_45', 'hotdog', 'Чикаго хот-дог (M)', 45000, 'https://i.ibb.co/d0h8q4T9/uploaded-image.jpg', 'Булочка, сосиска 2х, мясо тушеное, сырный соус, фирменный соус'),
+    ('h3_50', 'hotdog', 'Американский хот-дог', 50000, 'https://i.ibb.co/SwyLsq23/uploaded-image.jpg', 'Сытный американский хот-дог с сосиской, горчичным соусом и мясной начинкой'),
+    ('h4_30', 'hotdog', 'Нью-Йорк хот-дог', 30000, 'https://i.ibb.co/1JX6pT55/uploaded-image.jpg', 'Булочка, сосиска 2х, сол. огурец, горчичный соус, чипсы, кетчуп, майонез'),
+    ('h5_30', 'hotdog', 'Мехико хот-дог (C)', 30000, 'https://i.ibb.co/V04WZqTY/uploaded-image.jpg', 'Булочка, сосиска 2х, фарш, медовый соус, фирменный соус'),
+    ('h5_45', 'hotdog', 'Мехико хот-дог (M)', 45000, 'https://i.ibb.co/V04WZqTY/uploaded-image.jpg', 'Булочка, сосиска 2х, фарш, медовый соус, фирменный соус'),
+    ('h6_35', 'hotdog', 'Классический хот-дог', 35000, 'https://i.ibb.co/nsBf3tYp/uploaded-image.jpg', 'Булочка, сосиска 2х, помидор, огурец, айсберг, сырный соус, кетчуп, майонез'),
+    ('h7_30', 'hotdog', 'Чикен хот-дог (C)', 30000, 'https://i.ibb.co/Q3BMMmBc/uploaded-image.jpg', 'Булочка, сосиска 2х, курица терияки, сыр чеддер, чипсы, свит чили соус, кетчуп'),
+    ('h7_40', 'hotdog', 'Чикен хот-дог (M)', 40000, 'https://i.ibb.co/Q3BMMmBc/uploaded-image.jpg', 'Булочка, сосиска 2х, курица терияки, сыр чеддер, чипсы, свит чили соус, кетчуп'),
+    ('h8_25', 'hotdog', 'Французский хот-дог', 25000, 'https://i.ibb.co/DHCWRTzt/uploaded-image.jpg', 'Твинс батон, сосиска, сырный соус, фирменный соус'),
+    ('h9_50', 'hotdog', 'Премиум хот-дог', 50000, 'https://i.ibb.co/wZYLgqbt/uploaded-image.jpg', 'Булочка, сосиска 2х, фирменный соус, чеддер сыр, мясо тушеное, сыр моцарелла'),
+    ('h10_20', 'hotdog', 'Детский хот-дог', 20000, 'https://i.ibb.co/20BhbqBf/uploaded-image.jpg', 'Небольшой хот-дог для детей: мягкая булочка, сосиска и нежный соус'),
+    ('h11_40', 'hotdog', 'Роял фреш', 40000, 'https://i.ibb.co/kVcNDpP9/uploaded-image.jpg', 'Сосиска 3х, корейский баклажан, фри, халапеньо, сырный соус, фирменный соус, мини чиабатта'),
+    ('h12_35', 'hotdog', 'Сендвич', 35000, 'https://i.ibb.co/VWHCz3Px/uploaded-image.jpg', 'Горячий тостовый сендвич, нарезанный треугольниками'),
+    ('h13_35', 'hotdog', 'Итальянский сендвич', 35000, 'https://i.ibb.co/5Xw3QhmR/uploaded-image.jpg', 'Сытный сендвич в итальянском стиле на мягкой булочке со свежими овощами'),
+    ('b1_65', 'burger', 'Стрит бургер (M)', 65000, 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', 'Фирменный бургер с двумя котлетами и расплавленным сыром'),
+    ('b1_80', 'burger', 'Стрит бургер (L)', 80000, 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', 'Фирменный бургер с двумя котлетами и расплавленным сыром'),
+    ('b1_95', 'burger', 'Стрит бургер (XL)', 95000, 'https://i.ibb.co/kgkQ0Cf9/uploaded-image.jpg', 'Фирменный бургер с двумя котлетами и расплавленным сыром'),
+    ('b2_65', 'burger', 'Классический (M)', 65000, 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', 'Булочка, фарш, бургер соус, сыр чеддер, помидор, айсберг, сол. огурец'),
+    ('b2_80', 'burger', 'Классический (L)', 80000, 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', 'Булочка, фарш, бургер соус, сыр чеддер, помидор, айсберг, сол. огурец'),
+    ('b2_95', 'burger', 'Классический (XL)', 95000, 'https://i.ibb.co/Yvwj0C3/uploaded-image.jpg', 'Булочка, фарш, бургер соус, сыр чеддер, помидор, айсберг, сол. огурец'),
+    ('b3_65', 'burger', 'Трюфельный (M)', 65000, 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', 'Булочка, фарш, трюфельный соус, сыр президент'),
+    ('b3_80', 'burger', 'Трюфельный (L)', 80000, 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', 'Булочка, фарш, трюфельный соус, сыр президент'),
+    ('b3_95', 'burger', 'Трюфельный (XL)', 95000, 'https://i.ibb.co/pvHX3pK4/uploaded-image.jpg', 'Булочка, фарш, трюфельный соус, сыр президент'),
+    ('b4_65', 'burger', 'Острый (M)', 65000, 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', 'Булочка, фарш, острый соус, сыр чеддер, халапеньо'),
+    ('b4_80', 'burger', 'Острый (L)', 80000, 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', 'Булочка, фарш, острый соус, сыр чеддер, халапеньо'),
+    ('b4_95', 'burger', 'Острый (XL)', 95000, 'https://i.ibb.co/r2Kxj7Cp/uploaded-image.jpg', 'Булочка, фарш, острый соус, сыр чеддер, халапеньо'),
+    ('b5_75', 'burger', 'Стейк бургер', 75000, 'https://i.ibb.co/DfHMTmw8/uploaded-image.jpg', 'Булочка 10 см, бонфиле 130-150 гр, фирменный соус, сыр чеддер'),
+    ('b6_40', 'burger', 'Чизбургер', 40000, 'https://i.ibb.co/pB3Pm196/uploaded-image.jpg', 'Булочка 10 см, фарш 65 гр, бургер соус, сыр чеддер, лук'),
+    ('b7_45', 'burger', 'Чикен бургер', 45000, 'https://i.ibb.co/JFG2fX92/uploaded-image.jpg', 'Бургер с хрустящей куриной котлетой в панировке, сыром и свежим салатом'),
+    ('b8_65', 'burger', 'ББК (M)', 65000, 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', 'Булочка, фарш, ББК соус, сыр чеддер, лук, сол. огурец'),
+    ('b8_80', 'burger', 'ББК (L)', 80000, 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', 'Булочка, фарш, ББК соус, сыр чеддер, лук, сол. огурец'),
+    ('b8_95', 'burger', 'ББК (XL)', 95000, 'https://i.ibb.co/MxftJ80j/uploaded-image.jpg', 'Булочка, фарш, ББК соус, сыр чеддер, лук, сол. огурец'),
+    ('g1_58', 'garnir', 'СтрипБокс', 58000, 'https://i.ibb.co/bj5YyyzJ/uploaded-image.jpg', 'Куриный'),
+    ('g2_60', 'garnir', 'МитБокс', 60000, 'https://i.ibb.co/gZJDFRcQ/uploaded-image.jpg', 'Мясной'),
+    ('g3_35', 'garnir', 'Сырные подушки', 35000, 'https://i.ibb.co/Q79HDdyq/uploaded-image.jpg', 'Хрустящие золотистые подушечки с сырной начинкой, подаются с соусом'),
+    ('g4_30', 'garnir', 'Фри с трюфелем', 30000, 'https://i.ibb.co/M5Jym5y0/uploaded-image.jpg', 'Хрустящий картофель фри с трюфельным соусом'),
+    ('g5_25', 'garnir', 'Картофель Айдахо', 25000, 'https://i.ibb.co/fG4LCkQ3/uploaded-image.jpg', 'Румяные дольки картофеля по-деревенски (Айдахо)'),
+    ('g6_20', 'garnir', 'Картофель фри', 20000, 'https://i.ibb.co/3Y53x7B3/uploaded-image.jpg', 'Хрустящий золотистый картофель фри'),
+]
 
 PAYMENT_METHODS = {"Naqd", "Karta", "Click", "Naqd / Karta", "Click / Payme"}  # eski nomlar eski ilovalar uchun
 
@@ -355,6 +359,7 @@ SUPER_HELP = (
     "<b>👑 Super admin buyruqlari</b>\n"
     "/ochish — buyurtma qabul qilishni ochish\n"
     "/yopish [izoh] — buyurtma qabul qilishni to'xtatish\n"
+    "/menyu — MENYU BOSHQARUVI: yangi taom qo'shish, narx/nom/rasmni o'zgartirish, o'chirish\n"
     "/stop — stop-list (tugagan taomlarni o'chirish/yoqish)\n"
     "/stats — statistika\n"
     "/broadcast matn — barcha mijozlarga xabar yuborish\n"
@@ -568,6 +573,7 @@ def init_db() -> None:
             price      INTEGER NOT NULL,
             descr      TEXT NOT NULL DEFAULT '',
             file_id    TEXT NOT NULL DEFAULT '',
+            img_url    TEXT NOT NULL DEFAULT '',
             created_at INTEGER NOT NULL
         );
         CREATE TABLE IF NOT EXISTS price_overrides (
@@ -581,7 +587,12 @@ def init_db() -> None:
         );
         """
     )
-    load_custom_products()  # admin /yangi bilan qo'shgan taomlar (stop-list tozalashdan OLDIN yuklanadi)
+    try:  # eski bazalar uchun: rasm havolasi ustuni
+        db().execute("ALTER TABLE custom_products ADD COLUMN img_url TEXT NOT NULL DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
+    seed_menu()  # birinchi ishga tushganda eski menyu bazaga ko'chadi
+    load_custom_products()  # butun menyu bazadan yuklanadi (stop-list tozalashdan OLDIN)
     # Menyudan olib tashlangan taomlar stop-listda qolib ketmasin
     db().execute(
         "DELETE FROM stoplist WHERE product_id NOT IN (%s)" % ",".join("?" * len(PRODUCTS)),
@@ -591,7 +602,6 @@ def init_db() -> None:
         "DELETE FROM branch_stoplist WHERE product_id NOT IN (%s)" % ",".join("?" * len(PRODUCTS)),
         tuple(PRODUCTS),
     )
-    apply_price_overrides()
     try:  # eski bazalar uchun: kunlik buyurtma raqami ustuni
         db().execute("ALTER TABLE orders ADD COLUMN day_no INTEGER")
     except sqlite3.OperationalError:
@@ -825,11 +835,29 @@ def clean_text(value, limit: int) -> str:
     return t[:limit].strip()
 
 
+def seed_menu() -> None:
+    """Eski (kodda yozilgan) menyuni bir marta bazaga ko'chiradi. Avval /narx bilan o'zgargan narxlar saqlanadi."""
+    conn = db()
+    if get_setting("menu_seeded") == "1":
+        return
+    for i, (pid, cat, name, price, img, desc) in enumerate(BASE_MENU, start=1):
+        conn.execute(
+            "INSERT OR IGNORE INTO custom_products (id, category, name, price, descr, file_id, img_url, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (pid, cat, name, int(price), desc, "", img, i),  # created_at=i: tartib saqlanadi, yangi taomlar oxirida
+        )
+    for r in conn.execute("SELECT product_id, price FROM price_overrides").fetchall():
+        conn.execute("UPDATE custom_products SET price=? WHERE id=?", (int(r["price"]), r["product_id"]))
+    conn.execute("DELETE FROM price_overrides")
+    set_setting("menu_seeded", "1")
+
+
 def load_custom_products() -> None:
+    PRODUCTS.clear()
     for r in db().execute("SELECT * FROM custom_products ORDER BY created_at, id"):
         PRODUCTS[r["id"]] = {
             "category": r["category"], "name": r["name"], "price": int(r["price"]),
-            "custom": True, "desc": r["descr"] or "", "file_id": r["file_id"] or "",
+            "custom": True, "desc": r["descr"] or "", "file_id": r["file_id"] or "", "img_url": r["img_url"] or "",
         }
 
 
@@ -842,8 +870,17 @@ def add_custom_product(category: str, name: str, price: int, desc: str, file_id:
         "INSERT INTO custom_products (id, category, name, price, descr, file_id, created_at) VALUES (?,?,?,?,?,?,?)",
         (pid, category, name, int(price), desc, file_id or "", int(time.time())),
     )
-    PRODUCTS[pid] = {"category": category, "name": name, "price": int(price), "custom": True, "desc": desc, "file_id": file_id or ""}
+    PRODUCTS[pid] = {"category": category, "name": name, "price": int(price), "custom": True, "desc": desc, "file_id": file_id or "", "img_url": ""}
     return pid
+
+
+def update_product(pid: str, **fields) -> None:
+    """Taom nomi / tavsifi / rasmini o'zgartiradi (name, desc, file_id, img_url)."""
+    cols = {"name": "name", "desc": "descr", "file_id": "file_id", "img_url": "img_url"}
+    sets = ", ".join(f"{cols[k]}=?" for k in fields)
+    db().execute(f"UPDATE custom_products SET {sets} WHERE id=?", (*fields.values(), pid))
+    PRODUCTS[pid].update(fields)
+    _DISH_IMG_CACHE.pop(pid, None)
 
 
 def delete_custom_product(pid: str) -> bool:
@@ -869,11 +906,7 @@ def apply_price_overrides() -> None:
 
 
 def set_price(product_id: str, price: int) -> None:
-    db().execute(
-        "INSERT INTO price_overrides (product_id, price) VALUES (?, ?) "
-        "ON CONFLICT(product_id) DO UPDATE SET price=excluded.price",
-        (product_id, int(price)),
-    )
+    db().execute("UPDATE custom_products SET price=? WHERE id=?", (int(price), product_id))
     PRODUCTS[product_id]["price"] = int(price)
 
 
@@ -1311,7 +1344,7 @@ async def notify_new_order(bot, order_id: int) -> None:
 
     targets = [(admin_id, "admin") for admin_id in order_staff(order)]
     courier_chat = branch_courier_chat(order["branch"])
-    if courier_chat is not None:
+    if courier_chat is not None and order["delivery_type"] == "delivery":  # olib ketish kuryerga kerak emas
         targets.append((courier_chat, "courier"))
 
     for chat_id, kind in targets:
@@ -1710,13 +1743,16 @@ async def api_status(request):
             "stoplist": stoplist,
             "delivery_fee": DELIVERY_FEE,
             "prices": {pid: p["price"] for pid, p in PRODUCTS.items()},
-            "custom_products": [
+            "menu": [
                 {
                     "id": pid, "category": p["category"], "price": p["price"],
                     "name": p["name"].replace("'", "’"), "desc": (p.get("desc") or "").replace("'", "’"),
-                    "img": (f"/api/dish_img/{pid}?v={hashlib.md5(p['file_id'].encode()).hexdigest()[:8]}" if p.get("file_id") else ""),
+                    "img": (
+                        f"/api/dish_img/{pid}?v={hashlib.md5(p['file_id'].encode()).hexdigest()[:8]}" if p.get("file_id")
+                        else (p.get("img_url") or "")
+                    ),
                 }
-                for pid, p in PRODUCTS.items() if p.get("custom")
+                for pid, p in PRODUCTS.items()
             ],
             "branches": infos,
         }
@@ -1833,6 +1869,18 @@ async def api_order(request):
             branch = str(body.get("branch", "")).strip()
             if not find_branch(branch):
                 return jerr("Olib ketish uchun filialni tanlang.", code="branch")
+    elif delivery == "delivery" and MAX_DELIVERY_KM and CAFE_LAT is not None and CAFE_LON is not None:
+        # Filiallar yo'q: masofa kafening o'z koordinatasiga (CAFE_LAT/CAFE_LON) nisbatan tekshiriladi
+        if lat is None:
+            return jerr("Dostavka masofasini aniqlash uchun joylashuvingizni yuboring.", code="no_location")
+        km = _km(lat, lon, CAFE_LAT, CAFE_LON)
+        if km > MAX_DELIVERY_KM:
+            return jerr(
+                f"Kechirasiz, manzilingiz kafemizdan {km:.1f} km uzoqda — dostavka hududidan tashqarida. "
+                "Olib ketishni tanlashingiz mumkin.",
+                422,
+                code="too_far",
+            )
 
     # --- shu filial ochiqmi va savatdagi taomlar shu filialda bormi ---
     if branch and not branch_is_open(branch):
@@ -2040,6 +2088,9 @@ async def on_any_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if update.effective_user.id in SUPER_ADMIN_IDS and context.application.bot_data.get("dish_wait", {}).get(update.effective_user.id):
         await handle_dish_text(update, context)
+        return
+    if update.effective_user.id in SUPER_ADMIN_IDS and context.application.bot_data.get("edit_wait", {}).get(update.effective_user.id):
+        await handle_edit_text(update, context)
         return
     if update.effective_user.id in SUPER_ADMIN_IDS and context.application.bot_data.get("price_wait", {}).get(update.effective_user.id):
         await handle_price_text(update, context)
@@ -2273,8 +2324,8 @@ async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def _price_cat_view():
-    rows = [[_btn(label, f"pr:c:{cat}")] for cat, label in CATEGORIES.items()]
-    return "💰 <b>Narxlar</b>\nBo'limni tanlang, keyin taomni bosib yangi narxini yozasiz.", InlineKeyboardMarkup(rows)
+    rows = [[_btn(label, f"pr:c:{cat}")] for cat, label in CATEGORIES.items()] + [[_btn("⬅️ Menyu", "mn:m")]]
+    return "💰 <b>Taomlarni tahrirlash</b>\nBo'limni tanlang, keyin taomni bosib narxi, nomi, tavsifi yoki rasmini o'zgartirasiz.", InlineKeyboardMarkup(rows)
 
 
 def _price_list_view(cat: str):
@@ -2283,13 +2334,85 @@ def _price_list_view(cat: str):
         if p["category"] == cat:
             rows.append([_btn(f"{p['name']} · {fmt_money(p['price'])} so'm", f"pr:t:{pid}")])
     rows.append([_btn("⬅️ Orqaga", "pr:m")])
-    return f"💰 {esc(CATEGORIES.get(cat, cat))}\nNarxini o'zgartirmoqchi bo'lgan taomni bosing.", InlineKeyboardMarkup(rows)
+    return f"💰 {esc(CATEGORIES.get(cat, cat))}\nTahrirlamoqchi bo'lgan taomni bosing.", InlineKeyboardMarkup(rows)
+
+
+def _menu_panel_view():
+    rows = [
+        [_btn("➕ Yangi taom qo'shish", "mn:new")],
+        [_btn("💰 Narx / taomni tahrirlash", "mn:edit")],
+        [_btn("⛔ Stop-list (tugagan taomlar)", "mn:stop")],
+    ]
+    return (
+        f"🍽 <b>Menyu boshqaruvi</b>\nTaomlar soni: {len(PRODUCTS)} ta\n"
+        "Bu yerdagi o'zgarishlar ilovada 30 soniya ichida ko'rinadi.",
+        InlineKeyboardMarkup(rows),
+    )
+
+
+def _clear_waits(context, uid) -> None:
+    for key in ("price_wait", "dish_wait", "edit_wait"):
+        context.application.bot_data.setdefault(key, {}).pop(uid, None)
+
+
+@super_only
+async def cmd_menyu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    _clear_waits(context, update.effective_user.id)
+    text, markup = _menu_panel_view()
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
+
+
+async def on_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = query.from_user.id
+    if uid not in SUPER_ADMIN_IDS:
+        await query.answer("Ruxsat yo'q", show_alert=True)
+        return
+    action = query.data.split(":")[1] if ":" in query.data else ""
+    await query.answer()
+    _clear_waits(context, uid)
+    if action == "m":
+        text, markup = _menu_panel_view()
+    elif action == "new":
+        context.application.bot_data.setdefault("dish_wait", {})[uid] = {"step": "cat"}
+        rows = [[_btn(label, f"dn:c:{cat}")] for cat, label in CATEGORIES.items()] + [[_btn("⬅️ Orqaga", "mn:m")]]
+        text, markup = "🆕 <b>Yangi taom qo'shish</b>\nQaysi bo'limga qo'shamiz?", InlineKeyboardMarkup(rows)
+    elif action == "edit":
+        text, markup = _price_cat_view()
+    elif action == "stop":
+        brs = branches_of(uid)
+        if BRANCHES and not brs:
+            text, markup = "Sizga filial biriktirilmagan.", None
+        elif len(brs) > 1:
+            text, markup = _stop_pick_view(brs)
+        else:
+            text, markup = _stop_main_view(brs[0]["id"] if brs else None)
+    else:
+        return
+    await _edit_callback_message(query, text, markup)
+
+
+def _product_card(pid: str):
+    p = PRODUCTS[pid]
+    text = (
+        f"✏️ <b>{esc(p['name'])}</b>\n"
+        f"Bo'lim: {esc(CATEGORIES.get(p['category'], p['category']))}\n"
+        f"Narxi: <b>{fmt_money(p['price'])} so'm</b>\n"
+        f"Tavsif: {esc(p.get('desc') or '—')}\n"
+        f"Rasm: {'bor' if (p.get('file_id') or p.get('img_url')) else 'yoq'}"
+    )
+    rows = [
+        [_btn("💰 Narxi", f"pr:p:{pid}"), _btn("✏️ Nomi", f"pr:e:name:{pid}")],
+        [_btn("📝 Tavsifi", f"pr:e:desc:{pid}"), _btn("🖼 Rasmi", f"pr:e:img:{pid}")],
+        [_btn("🗑 Menyudan o'chirish", f"pr:x:{pid}")],
+        [_btn("⬅️ Orqaga", f"pr:c:{p['category']}")],
+    ]
+    return text, InlineKeyboardMarkup(rows)
 
 
 @super_only
 async def cmd_narx(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.application.bot_data.setdefault("price_wait", {}).pop(update.effective_user.id, None)
-    context.application.bot_data.setdefault("dish_wait", {}).pop(update.effective_user.id, None)
+    _clear_waits(context, update.effective_user.id)
     text, markup = _price_cat_view()
     await update.message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=markup)
 
@@ -2310,17 +2433,34 @@ async def on_price_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         wait.pop(uid, None)
         text, markup = _price_list_view(parts[2])
     elif action == "t" and len(parts) == 3 and parts[2] in PRODUCTS:
+        wait.pop(uid, None)
+        context.application.bot_data.setdefault("edit_wait", {}).pop(uid, None)
+        text, markup = _product_card(parts[2])
+    elif action == "p" and len(parts) == 3 and parts[2] in PRODUCTS:
         p = PRODUCTS[parts[2]]
         wait[uid] = parts[2]
+        context.application.bot_data.setdefault("edit_wait", {}).pop(uid, None)
         await query.answer()
         await _edit_callback_message(
             query,
             f"💰 <b>{esc(p['name'])}</b>\nHozirgi narx: <b>{fmt_money(p['price'])} so'm</b>\n\n"
             "✍️ Yangi narxni raqam bilan yozing (so'mda), masalan: <code>80000</code>",
-            InlineKeyboardMarkup(
-                ([[_btn("🗑 Menyudan o'chirish", f"pr:x:{parts[2]}")]] if p.get("custom") else [])
-                + [[_btn("⬅️ Bekor qilish", f"pr:c:{p['category']}")]]
-            ),
+            InlineKeyboardMarkup([[_btn("⬅️ Bekor qilish", f"pr:t:{parts[2]}")]]),
+        )
+        return
+    elif action == "e" and len(parts) == 4 and parts[2] in ("name", "desc", "img") and parts[3] in PRODUCTS:
+        p = PRODUCTS[parts[3]]
+        wait.pop(uid, None)
+        context.application.bot_data.setdefault("edit_wait", {})[uid] = {"pid": parts[3], "field": parts[2]}
+        ask = {
+            "name": "✍️ Yangi nomini yozing:",
+            "desc": "📝 Yangi tavsifni yozing (tavsifni o'chirish uchun «-» yozing):",
+            "img": "🖼 Yangi rasmni yuboring (rasm sifatida, fayl emas):",
+        }[parts[2]]
+        await query.answer()
+        await _edit_callback_message(
+            query, f"<b>{esc(p['name'])}</b>\n\n{ask}",
+            InlineKeyboardMarkup([[_btn("⬅️ Bekor qilish", f"pr:t:{parts[3]}")]]),
         )
         return
     elif action == "x" and len(parts) == 3 and PRODUCTS.get(parts[2], {}).get("custom"):
@@ -2330,7 +2470,7 @@ async def on_price_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _edit_callback_message(
             query,
             f"🗑 <b>{esc(p['name'])}</b> menyudan butunlay o'chirilsinmi?",
-            InlineKeyboardMarkup([[_btn("✅ Ha, o'chirish", f"pr:xx:{parts[2]}")], [_btn("⬅️ Yo'q", f"pr:c:{p['category']}")]]),
+            InlineKeyboardMarkup([[_btn("✅ Ha, o'chirish", f"pr:xx:{parts[2]}")], [_btn("⬅️ Yo'q", f"pr:t:{parts[2]}")]]),
         )
         return
     elif action == "xx" and len(parts) == 3 and PRODUCTS.get(parts[2], {}).get("custom"):
@@ -2345,6 +2485,32 @@ async def on_price_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await query.answer()
     await _edit_callback_message(query, text, markup)
+
+
+async def handle_edit_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    waits = context.application.bot_data.setdefault("edit_wait", {})
+    w = waits.get(uid)
+    if not w or w["pid"] not in PRODUCTS:
+        waits.pop(uid, None)
+        return
+    text = update.message.text or ""
+    if w["field"] == "name":
+        name = clean_text(text, 60)
+        if len(name) < 2:
+            await update.message.reply_text("Taom nomini yozing (kamida 2 ta harf).")
+            return
+        update_product(w["pid"], name=name)
+    elif w["field"] == "desc":
+        update_product(w["pid"], desc="" if text.strip() in ("-", "—") else clean_text(text, 200))
+    else:
+        await update.message.reply_text("Rasm yuboring (rasm sifatida) yoki «Bekor qilish» tugmasini bosing.")
+        return
+    waits.pop(uid, None)
+    await update.message.reply_text(
+        "✅ Saqlandi. Ilovada 30 soniya ichida yangilanadi.",
+        reply_markup=InlineKeyboardMarkup([[_btn("↩️ Taomga qaytish", f"pr:t:{w['pid']}")]]),
+    )
 
 
 async def handle_price_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -2390,7 +2556,7 @@ def _dish_cancel_markup():
 @super_only
 async def cmd_yangi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-    context.application.bot_data.setdefault("price_wait", {}).pop(uid, None)
+    _clear_waits(context, uid)
     context.application.bot_data.setdefault("dish_wait", {})[uid] = {"step": "cat"}
     rows = [[_btn(label, f"dn:c:{cat}")] for cat, label in CATEGORIES.items()] + [[_btn("❌ Bekor qilish", "dn:x")]]
     await update.message.reply_text(
@@ -2437,6 +2603,15 @@ async def handle_dish_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def on_dish_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.effective_user or update.effective_user.id not in SUPER_ADMIN_IDS:
+        return
+    ew = context.application.bot_data.get("edit_wait", {}).get(update.effective_user.id)
+    if ew and ew["field"] == "img" and ew["pid"] in PRODUCTS:  # mavjud taom rasmini almashtirish
+        update_product(ew["pid"], file_id=update.message.photo[-1].file_id, img_url="")
+        context.application.bot_data["edit_wait"].pop(update.effective_user.id, None)
+        await update.message.reply_text(
+            "✅ Rasm almashtirildi. Ilovada 30 soniya ichida yangilanadi.",
+            reply_markup=InlineKeyboardMarkup([[_btn("↩️ Taomga qaytish", f"pr:t:{ew['pid']}")]]),
+        )
         return
     d = context.application.bot_data.get("dish_wait", {}).get(update.effective_user.id)
     if not d or d.get("step") != "photo":
@@ -3773,6 +3948,12 @@ async def on_courier_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not order or order["status"] in ("done", "cancelled"):
         await query.answer("Bu buyurtma yopilgan.", show_alert=True)
         return
+    if order["delivery_type"] != "delivery":
+        await query.answer("Bu olib ketish buyurtmasi — kuryer kerak emas.", show_alert=True)
+        return
+    if order["status"] == "new":
+        await query.answer("Buyurtma hali admin tomonidan qabul qilinmagan. Qabul qilingach, qayta bosing.", show_alert=True)
+        return
     name = query.from_user.full_name or "Kuryer"
     row = db().execute("SELECT phone FROM couriers WHERE user_id=?", (query.from_user.id,)).fetchone()
     if not row:
@@ -3812,7 +3993,20 @@ async def on_courier_done(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if order["status"] not in ("ready", "onway"):
         await query.answer("Buyurtma hali tayyor emas. Tayyor bo'lgach bosing.", show_alert=True)
         return
-    set_order_status(oid, "done")
+    if order["status"] == "ready":  # "Yo'lda" bosqichini o'tkazib yubormaymiz: mijozga ham xabar boradi
+        cur = db().execute(
+            "UPDATE orders SET status='onway', updated_at=? WHERE id=? AND status='ready'", (int(time.time()), oid)
+        )
+        if cur.rowcount:
+            await notify_customer_status(context.bot, get_order(oid))
+    cur = db().execute(
+        "UPDATE orders SET status='done', updated_at=? WHERE id=? AND status IN ('ready','onway')",
+        (int(time.time()), oid),
+    )
+    if cur.rowcount == 0:  # shu orada admin o'zgartirib bo'lgan (masalan, bekor qilgan yoki yakunlagan)
+        await query.answer("Bu buyurtma holati allaqachon o'zgargan.", show_alert=True)
+        await refresh_order_messages(context.bot, oid)
+        return
     await query.answer("Yetkazildi ✅")
     await refresh_order_messages(context.bot, oid)
     await notify_customer_status(context.bot, get_order(oid))
@@ -3869,6 +4063,7 @@ USER_COMMANDS = [
 SUPER_COMMANDS = USER_COMMANDS + [
     BotCommand("ochish", "Buyurtma qabul qilishni ochish"),
     BotCommand("yopish", "Buyurtma qabul qilishni yopish"),
+    BotCommand("menyu", "Menyu: taom qo'shish / narx / tahrirlash"),
     BotCommand("stop", "Stop-list (tugagan taomlar)"),
     BotCommand("blok", "Mijozni bloklash (soxta buyurtma)"),
     BotCommand("blokdan", "Mijozni blokdan chiqarish"),
@@ -4068,6 +4263,12 @@ def main():
 
     init_db()
 
+    if not BRANCHES and MAX_DELIVERY_KM and (CAFE_LAT is None or CAFE_LON is None):
+        log.warning(
+            "⚠️ CAFE_LAT/CAFE_LON yozilmagan — dostavka masofasi TEKSHIRILMAYAPTI (MAX_DELIVERY_KM=%s km ishlamaydi).",
+            MAX_DELIVERY_KM,
+        )
+
     # Internet yoki tarmoq sekin kelganda xatolik bermasligi uchun timeout vaqtlari uzaytirildi
     request = HTTPXRequest(connect_timeout=30.0, read_timeout=30.0, write_timeout=30.0)
 
@@ -4090,6 +4291,7 @@ def main():
     app.add_handler(CommandHandler("ochish", cmd_ochish))
     app.add_handler(CommandHandler("yopish", cmd_yopish))
     app.add_handler(CommandHandler("stop", cmd_stop))
+    app.add_handler(CommandHandler("menyu", cmd_menyu))
     app.add_handler(CommandHandler("narx", cmd_narx))
     app.add_handler(CommandHandler("zaxira", cmd_zaxira))
     app.add_handler(CommandHandler("promo", cmd_promo))
@@ -4120,6 +4322,7 @@ def main():
     app.add_handler(CallbackQueryHandler(on_rate_callback, pattern=r"^rate:\d+:[1-5]$"))
     app.add_handler(CallbackQueryHandler(on_stop_callback, pattern=r"^sl:"))
     app.add_handler(CallbackQueryHandler(on_openclose_callback, pattern=r"^oc:"))
+    app.add_handler(CallbackQueryHandler(on_menu_callback, pattern=r"^mn:"))
     app.add_handler(CallbackQueryHandler(on_price_callback, pattern=r"^pr:"))
     app.add_handler(CallbackQueryHandler(on_dish_callback, pattern=r"^dn:"))
     app.add_handler(CallbackQueryHandler(on_broadcast_callback, pattern=r"^bc:(yes|no)$"))
