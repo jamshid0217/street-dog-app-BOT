@@ -2462,5 +2462,47 @@
       });
     }
   </script>
+
+  <script>
+    /* Tugma ovozi: "Pufakcha" (har bir tugma bosilganda) */
+    (function () {
+      var ctx = null;
+      var VOL = 0.6; // ovoz balandligi: 0 dan 1 gacha
+      function ac() {
+        if (!ctx) {
+          var C = window.AudioContext || window.webkitAudioContext;
+          if (!C) return null;
+          ctx = new C();
+        }
+        if (ctx.state === 'suspended') ctx.resume();
+        return ctx;
+      }
+      function bubble() {
+        try {
+          var c = ac(); if (!c) return;
+          var o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+          o.type = 'sine';
+          o.frequency.setValueAtTime(300, t);
+          o.frequency.exponentialRampToValueAtTime(950, t + 0.13);
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.7 * VOL, t + 0.005);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+          o.connect(g); g.connect(c.destination);
+          o.start(t); o.stop(t + 0.15);
+        } catch (e) {}
+      }
+      window.playClickSound = bubble;
+      var SEL = 'button, .cat-btn, .option-card, .icon-btn, .nav-item, .bottom-nav, .product-card, .promo-banner, .qty-btn, .add-btn, .fav-btn';
+      var last = 0;
+      document.addEventListener('click', function (e) {
+        var el = e.target.closest && e.target.closest(SEL);
+        if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true') return;
+        var now = Date.now();
+        if (now - last < 60) return;
+        last = now;
+        bubble();
+      }, true);
+    })();
+  </script>
 </body>
 </html>
